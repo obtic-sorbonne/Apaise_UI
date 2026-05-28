@@ -1,0 +1,14 @@
+PSYCHIATRE: Bonjour, comment vous sentez-vous depuis notre dernière rencontre ?
+PATIENT: Honnêtement, pas très bien. J'ai eu du mal à dormir toute la semaine, je me réveille la nuit et je n'arrive plus à me rendormir.
+PSYCHIATRE: Vous avez une idée de ce qui vous réveille ? Des pensées, des rêves ?
+PATIENT: Des pensées surtout. Je ressasse tout ce qui s'est passé au travail, les erreurs que j'aurais pu éviter. C'est épuisant, je me sens nul.
+PSYCHIATRE: Est-ce que ces pensées s'accompagnent d'une certaine anxiété, d'une tension physique ?
+PATIENT: Oui, le cœur qui s'emballe parfois. Mais il y a eu aussi un moment agréable cette semaine, j'ai retrouvé des amis jeudi soir, on a bien ri.
+PSYCHIATRE: C'est bien de noter ces moments positifs. Comment vous êtes-vous senti pendant cette soirée ?
+PATIENT: Léger, presque normal. Mais après, en rentrant, la tristesse est revenue. Comme si je n'avais pas le droit d'être heureux.
+PSYCHIATRE: Cette idée de ne pas avoir le droit d'être heureux, est-ce qu'elle est fréquente ?
+PATIENT: Assez, oui. Je suppose que j'ai peur que ça ne dure pas, que quelque chose de mauvais va arriver si je me laisse aller à me sentir bien.
+PSYCHIATRE: On va travailler là-dessus. Avez-vous pu pratiquer les exercices de respiration qu'on avait évoqués ?
+PATIENT: J'ai essayé deux ou trois fois, mais je ne suis pas sûr de bien les faire. Je ne ressens pas grand chose, peut-être que ça ne marche pas pour moi.
+PSYCHIATRE: C'est tout à fait normal au début. On va les reprendre ensemble aujourd'hui. Y a-t-il autre chose que vous souhaitez aborder ?
+PATIENT: Oui, ma relation avec ma mère. On s'est disputés dimanche, elle ne comprend pas ce que je traverse et ça me met en colère, mais en même temps je me sens coupable de lui en vouloir.
