@@ -1,0 +1,4053 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projet Apaise+ — Explorateur d'entretiens</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Sans:wght@300;400;500&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<!-- Données du corpus — modifier input/corpus_data.js pour ajouter vos entretiens -->
+<script src="input_gold/gold.js"></script>
+<style>
+:root{
+  --bg:#F7F5F0;--sb:#1A2035;--sb-text:#C8D0E4;--sb-acc:#4E72D6;
+  --w:#FFFFFF;--bd:#E8E4DC;--t1:#1A1714;--t2:#6B6560;--t3:#9B9590;
+  --acc:#4E72D6;--pat:#2E7D5F;--pat-l:#EDF7F3;--psy:#8B4A4A;--psy-l:#FAF0F0;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--t1);display:flex;height:100vh;overflow:hidden;}
+
+/* sidebar */
+#sb{width:232px;min-width:232px;background:var(--sb);display:flex;flex-direction:column;overflow-y:auto;transition:width .22s ease,min-width .22s ease;position:relative;}
+#sb.collapsed{width:48px;min-width:48px;overflow:hidden;}
+
+/* When collapsed, hide all text labels */
+#sb.collapsed .sb-logo-text,
+#sb.collapsed .sb-lbl,
+#sb.collapsed .nav span:not(.nav-ic),
+#sb.collapsed .sb-foot-inner{display:none;}
+
+/* Nav items: icon-only when collapsed */
+#sb.collapsed .nav{justify-content:center;padding:10px 0;border-left-color:transparent;}
+#sb.collapsed .nav.active{border-left-color:transparent;background:rgba(78,114,214,.25);}
+#sb.collapsed .nav-ic{margin:0;width:auto;}
+
+/* Logo area */
+.sb-logo{padding:16px 18px 14px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:space-between;min-height:62px;}
+#sb.collapsed .sb-logo{justify-content:center;padding:0;}
+
+.sb-logo-text{cursor:pointer;flex:1;}
+.sb-logo-text h1{font-family:'Playfair Display',serif;font-size:17px;font-weight:500;color:#fff;letter-spacing:-.3px;}
+.sb-logo-text p{font-size:10px;color:var(--sb-text);margin-top:3px;opacity:.6;letter-spacing:.8px;text-transform:uppercase;}
+
+/* Toggle button — always visible, always clickable */
+#sb-toggle{
+  flex-shrink:0;width:28px;height:28px;
+  display:flex;align-items:center;justify-content:center;
+  color:rgba(200,208,228,.6);font-size:12px;
+  cursor:pointer;border-radius:6px;
+  transition:transform .22s ease,background .13s;
+  z-index:10;
+}
+#sb-toggle:hover{background:rgba(255,255,255,.1);color:#fff;}
+#sb.collapsed #sb-toggle{transform:rotate(180deg);width:48px;height:62px;border-radius:0;}
+
+.sb-lbl{font-size:9.5px;font-weight:500;color:rgba(200,208,228,.4);text-transform:uppercase;letter-spacing:1px;padding:16px 18px 5px;}
+.nav{display:flex;align-items:center;gap:9px;padding:8px 18px;color:var(--sb-text);cursor:pointer;font-size:13px;border-left:2px solid transparent;transition:all .12s;}
+.nav:hover{background:rgba(255,255,255,.05);color:#fff;}
+.nav.active{background:rgba(78,114,214,.18);color:#fff;border-left-color:var(--sb-acc);}
+.nav.disabled{opacity:.28;pointer-events:none;}
+.nav-ic{font-size:13px;width:17px;text-align:center;flex-shrink:0;}
+.sb-foot{margin-top:auto;padding:14px 18px;border-top:1px solid rgba(255,255,255,.07);font-size:11px;color:rgba(200,208,228,.4);}
+.sb-foot strong{color:rgba(200,208,228,.7);}
+
+/* main */
+#main{flex:1;overflow-y:auto;}
+.view{display:none;}.view.active{display:block;}
+.ph{background:var(--w);border-bottom:1px solid var(--bd);padding:18px 30px;position:sticky;top:0;z-index:20;}
+.ph h2{font-family:'Playfair Display',serif;font-size:21px;font-weight:400;}
+.ph p{font-size:12px;color:var(--t2);margin-top:2px;}
+.pc{padding:26px 30px;}
+
+/* stat cards */
+.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+.sc{background:var(--w);border:1px solid var(--bd);border-radius:10px;padding:18px;}
+.sc .lbl{font-size:10.5px;font-weight:500;color:var(--t3);text-transform:uppercase;letter-spacing:.7px;}
+.sc .val{font-size:30px;font-family:'IBM Plex Mono',monospace;color:var(--t1);margin-top:7px;line-height:1.1;}
+.sc .sub{font-size:11px;color:var(--t2);margin-top:4px;}
+.cg{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px;}
+.cc{background:var(--w);border:1px solid var(--bd);border-radius:10px;padding:18px;}
+.cc.fw{grid-column:1/-1;}
+.ct{font-size:13px;font-weight:500;color:var(--t1);margin-bottom:3px;}
+.cs{font-size:11px;color:var(--t3);margin-bottom:14px;}
+
+/* exploration layout */
+.exlay{display:flex;}
+.fsb{width:210px;min-width:210px;background:var(--w);border-right:1px solid var(--bd);padding:16px;min-height:calc(100vh - 79px);overflow-y:auto;}
+.fsb h3{font-size:10.5px;font-weight:500;text-transform:uppercase;letter-spacing:.7px;color:var(--t3);margin-bottom:12px;}
+.fg{margin-bottom:16px;}
+.flbl{font-size:10.5px;font-weight:500;text-transform:uppercase;letter-spacing:.6px;color:var(--t3);margin-bottom:7px;}
+.fg select{width:100%;padding:6px 9px;border:1px solid var(--bd);border-radius:6px;font-size:12px;background:var(--bg);color:var(--t1);font-family:'IBM Plex Sans',sans-serif;}
+.fg select:focus{outline:none;border-color:var(--acc);}
+.cbi{display:flex;align-items:center;gap:6px;margin-bottom:5px;font-size:12px;color:var(--t1);cursor:pointer;}
+.gdot{display:inline-block;width:9px;height:9px;border-radius:2px;}
+.exm{flex:1;padding:22px;overflow:visible;min-width:0;}
+.sbw{display:flex;gap:9px;margin-bottom:18px;}
+.siw{flex:1;position:relative;}
+.si{width:100%;padding:9px 14px 9px 38px;border:1.5px solid var(--bd);border-radius:8px;font-size:13.5px;background:var(--w);color:var(--t1);font-family:'IBM Plex Sans',sans-serif;transition:border-color .15s;}
+.si:focus{outline:none;border-color:var(--acc);}
+.sic{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--t3);font-size:13px;pointer-events:none;}
+.sbtn{padding:9px 18px;background:var(--acc);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;}
+.sbtn:hover{opacity:.88;}
+
+/* results */
+.rh{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.rc{font-size:13px;color:var(--t2);}
+.rc strong{color:var(--t1);}
+.eb{padding:5px 12px;border:1px solid var(--bd);border-radius:6px;font-size:12px;cursor:pointer;background:var(--w);color:var(--t2);font-family:'IBM Plex Sans',sans-serif;}
+.eb:hover{background:var(--bg);}
+.srt{padding:5px 9px;border:1px solid var(--bd);border-radius:6px;font-size:12px;background:var(--w);cursor:pointer;font-family:'IBM Plex Sans',sans-serif;}
+
+/* tables */
+.kwt{width:100%;border-collapse:collapse;font-size:12.5px;}
+.kwt th{text-align:left;font-size:10.5px;font-weight:500;color:var(--t3);text-transform:uppercase;letter-spacing:.7px;padding:7px 10px;border-bottom:1.5px solid var(--bd);}
+.kwt td{padding:9px 10px;border-bottom:1px solid #F2EFE8;vertical-align:middle;}
+.kwt tr:hover td{background:#FAFAF8;}
+.kwt tr{cursor:pointer;}
+.kl{color:var(--t2);text-align:right;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:rtl;}
+.kk{background:#FEF3C7;color:#92400E;font-weight:500;padding:1px 4px;border-radius:3px;white-space:nowrap;}
+.kr{color:var(--t2);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.spb{display:inline-block;padding:2px 7px;border-radius:100px;font-size:10.5px;font-weight:500;white-space:nowrap;}
+.spb.patient{background:var(--pat-l);color:var(--pat);}
+.spb.psychiatre{background:var(--psy-l);color:var(--psy);}
+.empty{text-align:center;padding:50px 20px;color:var(--t3);}
+.empty p{font-size:13px;margin-top:6px;}
+
+/* interview */
+.ivlay{display:flex;height:calc(100vh - 141px);}
+.ivm{flex:1;overflow-y:auto;padding:22px;}
+.ivs{width:256px;min-width:256px;background:var(--w);border-left:1px solid var(--bd);overflow-y:auto;padding:16px;}
+.bc{font-size:11.5px;color:var(--t3);display:flex;align-items:center;gap:5px;padding:10px 30px;background:var(--w);border-bottom:1px solid var(--bd);}
+.bc a{color:var(--acc);text-decoration:none;cursor:pointer;}
+.bc a:hover{text-decoration:underline;}
+.imeta{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px;}
+.mt{font-size:11.5px;color:var(--t2);background:var(--bg);border:1px solid var(--bd);padding:3px 8px;border-radius:100px;}
+.isrch{width:100%;padding:8px 13px;border:1px solid var(--bd);border-radius:7px;font-size:12.5px;background:var(--bg);color:var(--t1);font-family:'IBM Plex Sans',sans-serif;margin-bottom:14px;}
+.isrch:focus{outline:none;border-color:var(--acc);}
+
+/* turns */
+.turn{display:flex;gap:12px;margin-bottom:12px;}
+.turn.hidden{display:none;}
+.tspk{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:500;flex-shrink:0;margin-top:2px;}
+.tspk.patient{background:var(--pat-l);color:var(--pat);}
+.tspk.psychiatre{background:var(--psy-l);color:var(--psy);}
+.tcnt{flex:1;}
+.tmeta{font-size:10.5px;color:var(--t3);margin-bottom:3px;}
+.ttxt{font-size:13px;line-height:1.75;color:var(--t1);background:var(--w);border:1px solid var(--bd);border-radius:0 10px 10px 10px;padding:9px 13px;}
+.turn.patient .ttxt{border-radius:10px 0 10px 10px;border-color:#D4ECE3;}
+.tems{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px;}
+.etag{font-size:10.5px;padding:1.5px 7px;border-radius:0;}
+mark.hl{background:#FEF3C7;color:#92400E;border-radius:2px;padding:0 1px;}
+
+/* annotation sidebar */
+.as{margin-bottom:18px;}
+.as h4{font-size:10.5px;font-weight:500;text-transform:uppercase;letter-spacing:.7px;color:var(--t3);margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--bd);}
+.erow{display:flex;align-items:center;gap:5px;margin-bottom:7px;user-select:none;}
+.erow input{flex-shrink:0;cursor:pointer;accent-color:var(--acc);}
+.edot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.enam{font-size:11.5px;color:var(--t1);flex-shrink:0;min-width:64px;}
+.ebar{flex:1;height:6px;background:#F0EDE6;border-radius:100px;overflow:hidden;}
+.ebarfill{height:100%;border-radius:100px;}
+.eval{font-size:10.5px;font-family:'IBM Plex Mono',monospace;color:var(--t3);width:18px;text-align:right;flex-shrink:0;}
+.prow{display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:11.5px;user-select:none;}
+.prow input{flex-shrink:0;cursor:pointer;accent-color:var(--acc);}
+
+/* speaking time — clickable rows */
+.spkrow{display:flex;align-items:center;gap:7px;margin-bottom:8px;padding:6px 8px;border-radius:7px;border:1.5px solid var(--bd);cursor:pointer;transition:border-color .13s,background .13s;user-select:none;}
+.spkrow:hover{border-color:#bbb;}
+.spkrow.active-spk{border-color:transparent;}
+.spkrow.active-spk.patient-row{background:var(--pat-l);border-color:#b3d9ca;}
+.spkrow.active-spk.psychiatre-row{background:var(--psy-l);border-color:#e8c5c5;}
+.spkrow.inactive-spk{opacity:.45;}
+.spk-cb{flex-shrink:0;accent-color:var(--acc);cursor:pointer;}
+.spklbl{font-size:11.5px;font-weight:500;width:68px;flex-shrink:0;}
+.spkbar{flex:1;height:7px;background:#E8E4DC;border-radius:100px;overflow:hidden;}
+.spkfill{height:100%;border-radius:100px;}
+.spkpct{font-size:11px;font-family:'IBM Plex Mono',monospace;min-width:28px;text-align:right;flex-shrink:0;}
+.spkwords{font-size:9.5px;color:var(--t3);min-width:52px;text-align:right;flex-shrink:0;}
+
+/* clustering */
+.clus-wrap{display:flex;gap:20px;padding:22px;height:calc(100vh - 130px);}
+.clus-plot{flex:1;min-width:0;background:var(--w);border:1px solid var(--bd);border-radius:10px;padding:18px;display:flex;flex-direction:column;}
+.clus-side{width:270px;min-width:270px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;}
+.clus-ctrl{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 22px;background:var(--w);border-bottom:1px solid var(--bd);}
+.clus-ctrl label{font-size:12.5px;color:var(--t2);}
+.clus-ctrl strong{color:var(--t1);}
+.k-slider{width:130px;accent-color:var(--acc);}
+.clus-btn{padding:7px 16px;background:var(--acc);color:#fff;border:none;border-radius:7px;font-size:12.5px;font-weight:500;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;}
+.clus-btn:hover{opacity:.88;}
+.clus-btn:disabled{opacity:.45;cursor:default;}
+.clus-note{font-size:11px;color:var(--t3);margin-left:auto;}
+.ccard{background:var(--w);border:1px solid var(--bd);border-radius:10px;padding:14px;}
+.ccard-hd{display:flex;align-items:center;gap:8px;margin-bottom:9px;}
+.ccard-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;}
+.ccard-title{font-size:12.5px;font-weight:500;color:var(--t1);}
+.ccard-n{font-size:11px;color:var(--t3);margin-left:auto;}
+.ccard-terms{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:9px;}
+.cterm{font-size:10.5px;padding:2px 7px;border-radius:100px;background:var(--bg);border:1px solid var(--bd);color:var(--t2);}
+.ccard-ents{display:flex;flex-direction:column;gap:3px;}
+.cent{font-size:11.5px;color:var(--acc);cursor:pointer;padding:3px 6px;border-radius:5px;transition:background .1s;}
+.cent:hover{background:var(--acc-l);}
+.clus-empty{text-align:center;padding:60px 20px;color:var(--t3);}
+.clus-empty p{font-size:13px;margin-top:8px;}
+.static-page{padding:50px 60px;max-width:780px;}
+.static-page h3{font-family:'Playfair Display',serif;font-size:26px;font-weight:400;margin-bottom:12px;}
+.static-page p{font-size:14px;line-height:1.75;color:var(--t2);}
+
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:#D4D0C8;border-radius:3px;}
+
+/* ── Column filters ── */
+.kwt th.sortable{cursor:pointer;user-select:none;white-space:nowrap;}
+.kwt th.sortable:hover{color:var(--acc);}
+.sort-arrow{margin-left:3px;font-size:9px;color:var(--t3);display:inline-block;min-width:8px;}
+.kwt th.sortable.asc .sort-arrow{color:var(--acc);}
+.kwt th.sortable.desc .sort-arrow{color:var(--acc);}
+.col-filter-row th{padding:4px 5px 6px;border-bottom:2px solid var(--bd);}
+.col-filter{
+  width:100%;padding:3px 6px;
+  border:1px solid var(--bd);border-radius:4px;
+  font-size:11px;background:var(--bg);color:var(--t1);
+  font-family:'IBM Plex Sans',sans-serif;
+  transition:border-color .13s;
+}
+.col-filter:focus{outline:none;border-color:var(--acc);}
+.col-filter::placeholder{color:var(--t3);}
+/* hide number spinners */
+.col-filter[type=number]::-webkit-inner-spin-button,
+.col-filter[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+.col-filter[type=number]{-moz-appearance:textfield;}
+
+/* ── Footer bar ── */
+#corpus-footer{
+  position:sticky;bottom:0;z-index:30;
+  background:var(--w);border-top:1.5px solid var(--bd);
+  height:38px;display:flex;align-items:center;
+  padding:0 18px;gap:14px;flex-shrink:0;
+  font-size:11px;color:var(--t3);letter-spacing:.03em;
+}
+#corpus-footer .foot-stat{flex:1;font-size:11px;color:var(--t3);}
+#corpus-footer .foot-stat strong{color:var(--t1);}
+#corpus-footer .foot-sep{width:1px;height:16px;background:var(--bd);}
+.foot-btn{
+  display:flex;align-items:center;gap:5px;
+  height:24px;padding:0 12px;
+  border:1px solid var(--bd);border-radius:4px;
+  background:var(--bg);color:var(--t2);
+  font-family:'IBM Plex Sans',sans-serif;font-size:11px;
+  cursor:pointer;letter-spacing:.04em;
+  transition:all .13s;white-space:nowrap;
+}
+.foot-btn:hover{background:var(--w);border-color:#bbb;color:var(--t1);}
+.foot-btn.llm-btn{border-color:var(--acc);color:var(--acc);}
+.foot-btn.llm-btn:hover{background:var(--acc);color:#fff;}
+
+/* ── LLM Modal (active) ── */
+#llm-modal{
+  display:none;position:fixed;inset:0;z-index:200;
+  background:rgba(26,32,53,.55);backdrop-filter:blur(3px);
+  align-items:center;justify-content:center;
+}
+#llm-modal.open{display:flex;}
+.llm-box{
+  background:var(--w);border:1px solid var(--bd);border-radius:14px;
+  width:min(580px,92vw);padding:28px 28px 22px;
+  box-shadow:0 24px 60px rgba(0,0,0,.18);
+  display:flex;flex-direction:column;gap:14px;
+  animation:llm-in .18s ease;
+}
+@keyframes llm-in{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+.llm-head{display:flex;align-items:center;justify-content:space-between;}
+.llm-title{font-family:'Playfair Display',serif;font-size:18px;font-weight:400;color:var(--t1);}
+.llm-close{width:28px;height:28px;border:none;background:none;cursor:pointer;font-size:17px;color:var(--t3);border-radius:6px;display:flex;align-items:center;justify-content:center;transition:background .12s;}
+.llm-close:hover{background:var(--bg);color:var(--t1);}
+.llm-endpoint-row{display:flex;gap:7px;align-items:center;}
+.llm-endpoint-row label{font-size:10.5px;color:var(--t3);white-space:nowrap;}
+.llm-endpoint{
+  flex:1;padding:5px 9px;border:1px solid var(--bd);border-radius:6px;
+  font-size:11.5px;font-family:'IBM Plex Mono',monospace;
+  background:var(--bg);color:var(--t1);
+}
+.llm-endpoint:focus{outline:none;border-color:var(--acc);}
+.llm-textarea{
+  width:100%;min-height:110px;resize:vertical;
+  padding:11px 14px;border:1.5px solid var(--bd);border-radius:8px;
+  font-size:13px;font-family:'IBM Plex Sans',sans-serif;
+  color:var(--t1);background:var(--bg);
+  transition:border-color .13s;
+}
+.llm-textarea:focus{outline:none;border-color:var(--acc);}
+.llm-response{
+  min-height:80px;max-height:220px;overflow-y:auto;
+  padding:11px 14px;border-radius:8px;
+  background:var(--bg);border:1px solid var(--bd);
+  font-size:12.5px;line-height:1.75;color:var(--t1);
+  display:none;white-space:pre-wrap;
+}
+.llm-response.visible{display:block;}
+.llm-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.llm-context{font-size:11px;color:var(--t3);}
+.llm-send{
+  padding:8px 20px;background:var(--acc);color:#fff;border:none;border-radius:8px;
+  font-size:13px;font-weight:500;font-family:'IBM Plex Sans',sans-serif;
+  cursor:pointer;transition:opacity .13s;
+}
+.llm-send:hover{opacity:.88;}
+.llm-send:disabled{opacity:.4;cursor:not-allowed;}
+.llm-status{font-size:11px;color:var(--t3);display:flex;align-items:center;gap:5px;}
+.llm-dot{width:7px;height:7px;border-radius:50%;background:#9CA3AF;flex-shrink:0;transition:background .3s;}
+.llm-dot.ok{background:#2E7D5F;}
+.llm-dot.err{background:#EF4444;}
+.llm-dot.loading{background:#F59E0B;animation:llm-pulse .7s infinite alternate;}
+@keyframes llm-pulse{from{opacity:.4;}to{opacity:1;}}
+#view-plutchik .ph { background:var(--w); border-bottom:1px solid var(--bd); padding:18px 30px; }
+#view-plutchik .ph h2 { font-family:'Playfair Display',serif; font-size:21px; font-weight:400; }
+#view-plutchik .ph p  { font-size:12px; color:var(--t2); margin-top:2px; }
+#view-plutchik .plut-body { padding:26px 30px; }
+
+.plut-import-bar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+.plut-import-bar label {
+  font-family:'IBM Plex Sans',sans-serif; font-size:12px; padding:5px 14px;
+  border:1px solid var(--sb); border-radius:20px; cursor:pointer;
+  color:var(--sb); background:#fff; transition:all .15s;
+}
+.plut-import-bar label:hover { background:var(--sb); color:#fff; }
+#plut-import-status { font-family:'IBM Plex Sans',sans-serif; font-size:11px; color:#888; }
+
+.plut-presets { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px; }
+.plut-presets button {
+  font-family:'IBM Plex Sans',sans-serif; font-size:11px; padding:4px 12px;
+  border:1px solid #ccc; background:#fff; border-radius:20px;
+  cursor:pointer; color:#444; transition:all .15s;
+}
+.plut-presets button:hover { background:var(--sb); color:#fff; border-color:var(--sb); }
+
+.plut-section { margin-bottom:40px; }
+.plut-section-title {
+  font-family:'IBM Plex Sans',sans-serif; font-size:11px; font-weight:600;
+  letter-spacing:.12em; text-transform:uppercase; color:#888;
+  margin-bottom:16px; padding-bottom:8px; border-bottom:1px solid #e8e5de;
+  display:flex; align-items:baseline; gap:10px;
+}
+.plut-section-title span { font-size:10px; font-weight:400; letter-spacing:0; text-transform:none; color:#aaa; }
+.plut-sec-body { display:flex; gap:28px; align-items:flex-start; flex-wrap:wrap; }
+.plut-panel { flex:1; min-width:200px; }
+.plut-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+/* Sliders 3 tiers */
+.plut-sliders-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px 24px; flex:1; min-width:240px; }
+.plut-emo-block {}
+.plut-emo-header { display:flex; align-items:center; gap:6px; margin-bottom:6px; }
+.plut-emo-name { font-family:'IBM Plex Sans',sans-serif; font-size:12px; font-weight:500; color:#333; }
+.plut-emo-val { font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:500; color:#555; margin-left:auto; min-width:28px; text-align:right; }
+.plut-slider-wrap { position:relative; height:28px; }
+.plut-track-bg {
+  position:absolute; top:50%; transform:translateY(-50%);
+  left:0; right:0; height:6px; border-radius:3px;
+  display:flex; overflow:hidden; pointer-events:none;
+}
+.plut-tier { flex:1; height:100%; }
+input[type=range].plut-emo-sl {
+  position:absolute; top:50%; transform:translateY(-50%);
+  left:0; width:100%; margin:0;
+  -webkit-appearance:none; appearance:none;
+  background:transparent; cursor:pointer; z-index:2;
+}
+input[type=range].plut-emo-sl::-webkit-slider-thumb {
+  -webkit-appearance:none; width:14px; height:14px;
+  border-radius:50%; background:#1A2035;
+  border:2px solid #f7f5f0; cursor:pointer;
+}
+input[type=range].plut-emo-sl::-moz-range-thumb {
+  width:14px; height:14px; border-radius:50%;
+  background:#1A2035; border:2px solid #f7f5f0; cursor:pointer;
+}
+input[type=range].plut-emo-sl::-webkit-slider-runnable-track { background:transparent; }
+input[type=range].plut-emo-sl::-moz-range-track { background:transparent; }
+.plut-tier-labels {
+  display:flex; justify-content:space-between;
+  font-family:'IBM Plex Sans',sans-serif; font-size:8px; color:#bbb;
+  margin-top:2px; padding:0 1px;
+}
+.plut-tier-labels span { text-align:center; flex:1; }
+
+.plut-dy-row { display:flex; align-items:center; gap:10px; margin-bottom:9px; }
+.plut-dy-lbl { font-family:'IBM Plex Sans',sans-serif; font-size:11px; color:#666; width:115px; flex-shrink:0; }
+.plut-dy-src { font-family:'IBM Plex Sans',sans-serif; font-size:9px; color:#aaa; width:80px; flex-shrink:0; }
+.plut-dy-bar-wrap { flex:1; background:#ece9e0; border-radius:3px; height:5px; overflow:hidden; }
+.plut-dy-bar { height:5px; border-radius:3px; transition:width .25s ease; }
+.plut-dy-val { font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:500; min-width:28px; text-align:right; color:#1a1a1a; }
+.plut-formula-note { font-family:'IBM Plex Sans',sans-serif; font-size:10px; color:#aaa; margin-bottom:12px; font-style:italic; }
+
+/* annotation manuelle */
+.ann-turn{background:var(--w);border:1px solid var(--bd);border-radius:10px;padding:14px 16px;}
+.ann-turn.ann-patient{border-left:3px solid var(--pat);}
+.ann-turn.ann-psychiatre{border-left:3px solid var(--psy);opacity:.65;}
+.ann-spk{font-size:10.5px;font-weight:500;text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px;}
+.ann-spk.ann-patient{color:var(--pat);}
+.ann-spk.ann-psychiatre{color:var(--psy);}
+.ann-text{font-size:13.5px;line-height:1.85;color:var(--t1);user-select:text;}
+.ann-word{display:inline;cursor:pointer;border-radius:3px;padding:0 1px;transition:background .08s;}
+.ann-word:hover{background:#E8F4FD;}
+.ann-word.selected{background:#BFD9F7;color:#1A3A5C;}
+.ann-turn-footer{margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.ann-no-emo-btn{font-size:11.5px;padding:4px 12px;border:1.5px solid var(--bd);border-radius:100px;background:var(--bg);cursor:pointer;color:var(--t2);transition:all .12s;}
+.ann-no-emo-btn:hover{border-color:#aaa;color:var(--t1);}
+.ann-no-emo-btn.active{background:#F0F4FF;border-color:var(--acc);color:var(--acc);}
+.ann-badge{font-size:10.5px;padding:2px 8px;border-radius:100px;background:var(--pat-l);color:var(--pat);border:1px solid #b3d9ca;}
+
+/* panneau annotation flottant */
+.ann-panel{position:fixed;right:0;top:0;width:340px;background:var(--w);border-left:1.5px solid var(--acc);box-shadow:-6px 0 28px rgba(0,0,0,.10);z-index:200;overflow:hidden;display:none;height:100vh;}
+.ann-panel.open{display:flex;flex-direction:column;}
+.ann-panel-hd{background:var(--acc);color:#fff;padding:11px 16px;display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:500;flex-shrink:0;}
+.ann-panel-hd button{background:none;border:none;color:#fff;cursor:pointer;font-size:16px;line-height:1;opacity:.8;}
+.ann-panel-hd button:hover{opacity:1;}
+.ann-panel-body{padding:14px 16px;overflow-y:auto;flex:1;}
+.ann-panel-sel{font-size:12px;color:var(--t2);background:var(--bg);border-radius:6px;padding:6px 10px;margin-bottom:12px;line-height:1.5;font-style:italic;}
+.ann-section{margin-bottom:12px;}
+.ann-section-title{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.8px;color:var(--t3);margin-bottom:6px;}
+.ann-chips{display:flex;flex-wrap:wrap;gap:5px;}
+.ann-chip{font-size:11.5px;padding:2px 7px;border-radius:100px;border:1.5px solid var(--bd);background:var(--bg);cursor:pointer;transition:all .1s;color:var(--t2);}
+.ann-chip:hover{border-color:#aaa;color:var(--t1);}
+.ann-chip.on{border-color:var(--acc);background:#EEF2FF;color:var(--acc);font-weight:500;}
+.ann-chip.emo-on{color:#fff;border-color:transparent;}
+.ann-comment{width:100%;padding:7px 10px;border:1.5px solid var(--bd);border-radius:7px;font-size:12.5px;font-family:'IBM Plex Sans',sans-serif;color:var(--t1);resize:vertical;min-height:56px;background:var(--bg);}
+.ann-comment:focus{outline:none;border-color:var(--acc);}
+.ann-validate-btn{width:100%;padding:9px;background:var(--pat);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;margin-top:4px;}
+.ann-validate-btn:hover{opacity:.88;}
+.ann-tag-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;}
+#ann-export-fab{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:150;display:none;background:var(--pat);color:#fff;border:none;border-radius:100px;padding:11px 24px;font-size:13px;font-weight:500;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;box-shadow:0 4px 18px rgba(0,0,0,.18);transition:opacity .15s,transform .15s;}
+#ann-export-fab:hover{opacity:.88;transform:translateX(-50%) translateY(-2px);}
+#ann-export-fab.visible{display:block;}
+.ann-role-grid{width:100%;border-collapse:collapse;font-size:10.5px;}
+.ann-role-grid th{font-weight:500;color:var(--t3);padding:3px 4px;text-align:center;font-size:10.5px;border-bottom:1px solid var(--bd);}
+.ann-role-grid th:first-child{text-align:left;}
+.ann-role-grid td{padding:3px 4px;text-align:center;border-bottom:1px solid var(--bg);}
+.ann-role-grid td:first-child{text-align:left;color:var(--t3);font-weight:500;white-space:nowrap;font-size:10.5px;}
+.ann-role-grid input[type=radio]{accent-color:var(--acc);width:11px;height:11px;cursor:pointer;}
+.ann-role-grid tr:hover td{background:var(--bg);}
+</style>
+</head>
+<body>
+
+<!-- ══════════ SIDEBAR ══════════ -->
+<div id="sb">
+  <div class="sb-logo">
+    <div class="sb-logo-text" onclick="resetAll()" title="Revenir à l'accueil">
+      <h1>Projet Apaise+</h1>
+      <p>Explorateur d'entretiens</p>
+    </div>
+    <div id="sb-toggle" onclick="toggleSidebar()" title="Réduire / agrandir">◀</div>
+  </div>
+  <div class="sb-lbl">Navigation</div>
+  <div class="nav disabled" data-view="dashboard" onclick="navigate('dashboard')" title="Tableau de bord">
+    <span class="nav-ic">⊞</span><span>Tableau de bord</span>
+  </div>
+  <div class="nav disabled" data-view="exploration" onclick="navigate('exploration')" title="Exploration">
+    <span class="nav-ic">✦</span><span>Exploration</span>
+  </div>
+  <div class="nav disabled" data-view="clustering" onclick="navigate('clustering')" title="Clustering">
+    <span class="nav-ic">⁙</span><span>Clustering</span>
+  </div>
+  <div class="nav disabled" data-view="plutchik" onclick="navigate('plutchik')" title="Roue des émotions">
+    <span class="nav-ic">⊙</span><span>Roue des émotions</span>
+  </div>
+  <div class="nav" data-view="annotation" onclick="navigate('annotation')" title="Annotation manuelle">
+    <span class="nav-ic">✎</span><span>Annotation manuelle</span>
+  </div>
+  <div class="nav" data-view="gestion" onclick="navigate('gestion')" title="Gestion des annotations">
+    <span class="nav-ic">♘</span><span>Gestion des annotations</span>
+  </div>
+  <div class="sb-lbl">Ressources</div>
+  <div class="nav disabled" data-view="guide" onclick="navigate('guide')" title="Guide">
+    <span class="nav-ic">≡</span><span>Guide</span>
+  </div>
+  <div class="nav disabled" data-view="apropos" onclick="navigate('apropos')" title="À propos">
+    <span class="nav-ic">ℹ</span><span>À propos</span>
+  </div>
+  <div class="sb-foot">
+    <div class="sb-foot-inner">
+      <div>ObTIC — 2026</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ MAIN ══════════ -->
+<div id="main">
+
+<!-- ─── DASHBOARD ─── -->
+<div id="view-dashboard" class="view">
+  <div class="ph"><h2>Tableau de bord</h2><p>Vue d'ensemble du corpus d'entretiens psychiatriques</p></div>
+  <div class="pc">
+    <div class="sg">
+      <div class="sc"><div class="lbl">Entretiens</div><div class="val" id="st-ent">—</div><div class="sub" id="st-ent-sub">—</div></div>
+      <div class="sc"><div class="lbl">Patients</div><div class="val" id="st-pat">—</div><div class="sub" id="st-pat-sub">—</div></div>
+      <div class="sc"><div class="lbl">Tours de parole</div><div class="val" id="st-turns">—</div><div class="sub">annotations complètes</div></div>
+      <div class="sc"><div class="lbl">Durée moyenne</div><div class="val" id="st-dur">—</div><div class="sub" id="st-dur-sub">—</div></div>
+    </div>
+
+    <!-- Row 1: groups + emotions donut -->
+    <div class="cg">
+      <div class="cc">
+        <div class="ct">Distribution par groupe clinique</div>
+        <div class="cs">Nombre d'entretiens par catégorie</div>
+        <div style="position:relative;height:195px;"><canvas id="ch-groups"></canvas></div>
+      </div>
+      <div class="cc">
+        <div class="ct">Répartition des émotions</div>
+        <div class="cs">Toutes annotations confondues</div>
+        <div id="em-legend" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;font-size:10.5px;"></div>
+        <div style="position:relative;height:155px;"><canvas id="ch-emo"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Row 2: dur + emo-by-group -->
+    <div class="cg">
+      <div class="cc">
+        <div class="ct">Durée moyenne par groupe</div>
+        <div class="cs">En minutes</div>
+        <div style="position:relative;height:175px;"><canvas id="ch-dur"></canvas></div>
+      </div>
+      <div class="cc">
+        <div class="ct">Émotions par groupe clinique</div>
+        <div class="cs">Émotions principales empilées</div>
+        <div style="position:relative;height:175px;"><canvas id="ch-ebg"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Row 3: emo distribution + locuteur split (moved from Exploration) -->
+    <div class="cg">
+      <div class="cc">
+        <div class="ct">Distribution des émotions — patient vs psychiatre</div>
+        <div class="cs">Fréquence des étiquettes émotionnelles par locuteur</div>
+        <div style="position:relative;height:210px;"><canvas id="ch-emo-spk"></canvas></div>
+      </div>
+      <div class="cc">
+        <div class="ct">Répartition patient / psychiatre</div>
+        <div class="cs">Proportion des tours de parole sur l'ensemble du corpus</div>
+        <div style="position:relative;height:210px;"><canvas id="ch-spk-split"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Row 4: scores -->
+    <div class="cc fw">
+      <div class="ct">Scores cliniques (PANSS) par entretien</div>
+      <div class="cs">Couleur par groupe</div>
+      <div style="position:relative;height:165px;"><canvas id="ch-scores"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── EXPLORATION ─── -->
+<div id="view-exploration" class="view">
+  <div class="ph"><h2>Exploration du corpus</h2><p>Recherche combinable par termes, annotations et métadonnées</p></div>
+  <div class="exlay">
+
+    <!-- Filter sidebar — Locuteur filter removed -->
+    <div class="fsb">
+      <h3>Filtres</h3>
+      <div class="fg">
+        <div class="flbl">Groupe clinique</div>
+        <div class="cbi"><input type="checkbox" id="f-ga" checked onchange="applyFilters()"><span class="gdot" style="background:#4E72D6"></span>A — À risque</div>
+        <div class="cbi"><input type="checkbox" id="f-gn" checked onchange="applyFilters()"><span class="gdot" style="background:#2E7D5F"></span>N — Non à risque</div>
+        <div class="cbi"><input type="checkbox" id="f-gp" checked onchange="applyFilters()"><span class="gdot" style="background:#C47A2E"></span>P — Psychotique</div>
+        <div class="cbi"><input type="checkbox" id="f-gc" checked onchange="applyFilters()"><span class="gdot" style="background:#8B4A8B"></span>C — Contrôle</div>
+      </div>
+      <hr style="border:none;border-top:1px solid var(--bd);margin:4px 0 12px;">
+      <div class="fg">
+        <select id="f-emo" onchange="applyFilters()">
+          <option value="">Émotion — toutes</option>
+          <option value="anxiété">Anxiété</option>
+          <option value="tristesse">Tristesse</option>
+          <option value="joie">Joie</option>
+          <option value="colère">Colère</option>
+          <option value="peur">Peur</option>
+          <option value="neutre">Neutre</option>
+          <option value="confusion">Confusion</option>
+          <option value="désespoir">Désespoir</option>
+          <option value="surprise">Surprise</option>
+        </select>
+      </div>
+      <div class="fg">
+        <select id="f-pros" onchange="applyFilters()">
+          <option value="">Prosodie — toutes</option>
+          <option value="calme">Calme</option>
+          <option value="tendue">Tendue</option>
+          <option value="rapide">Rapide</option>
+          <option value="hésitante">Hésitante</option>
+          <option value="monotone">Monotone</option>
+          <option value="lente">Lente</option>
+          <option value="expressive">Expressive</option>
+          <option value="ferme">Ferme</option>
+        </select>
+      </div>
+      <div class="fg">
+        <select id="f-age" onchange="applyFilters()">
+          <option value="">Âge — tous</option>
+          <option value="20">20 ans et plus</option>
+          <option value="30">30 ans et plus</option>
+          <option value="40">40 ans et plus</option>
+          <option value="50">50 ans et plus</option>
+        </select>
+      </div>
+      <div class="fg">
+        <select id="f-sexe" onchange="applyFilters()">
+          <option value="">Sexe — tous</option>
+          <option value="M">Masculin</option>
+          <option value="F">Féminin</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Main area -->
+    <div class="exm">
+      <div class="sbw">
+        <div class="siw">
+          <span class="sic">⌕</span>
+          <input type="text" class="si" id="q"
+            placeholder="Mot, expression ou regex — affiche les concordances par tour de parole"
+            oninput="applyFilters()">
+        </div>
+        <button class="eb" onclick="applyFilters()">Rechercher</button>
+        <button class="eb" onclick="openLLM()">⬡ Interroger le LLM</button>
+      </div>
+
+      <div id="rc" style="display:none"></div>
+
+      <!-- Default table: one row per interview -->
+      <div id="tbl-default" style="overflow-x:auto;">
+        <table class="kwt" id="corpus-table">
+          <thead>
+          <tr>
+            <th class="sortable" style="width:84px" onclick="colSort('id')">Entretien <span class="sort-arrow" id="sa-id"></span></th>
+            <th class="sortable" style="width:54px" onclick="colSort('groupe')">Groupe <span class="sort-arrow" id="sa-groupe"></span></th>
+            <th class="sortable" style="width:82px" onclick="colSort('date')">Date <span class="sort-arrow" id="sa-date"></span></th>
+            <th class="sortable" style="width:62px" onclick="colSort('duree')">Durée <span class="sort-arrow" id="sa-duree"></span></th>
+            <th class="sortable" onclick="colSort('diagnostic')">Diagnostic <span class="sort-arrow" id="sa-diagnostic"></span></th>
+            <th class="sortable" style="width:48px" onclick="colSort('age')">Âge <span class="sort-arrow" id="sa-age"></span></th>
+            <th class="sortable" style="width:46px" onclick="colSort('sexe')">Sexe <span class="sort-arrow" id="sa-sexe"></span></th>
+            <th class="sortable" style="width:52px" onclick="colSort('tours')">Tours <span class="sort-arrow" id="sa-tours"></span></th>
+            <th style="width:110px">Émotions</th>
+          </tr>
+          <tr class="col-filter-row">
+            <th><input class="col-filter" id="cf-id" type="text" placeholder="ID…" oninput="applyFilters()"></th>
+            <th>
+              <select class="col-filter" id="cf-groupe" onchange="applyFilters()">
+                <option value="">Tous</option>
+                <option value="A">A</option>
+                <option value="N">N</option>
+                <option value="P">P</option>
+                <option value="C">C</option>
+              </select>
+            </th>
+            <th><input class="col-filter" id="cf-date" type="text" placeholder="ex. 2023" oninput="applyFilters()"></th>
+            <th><input class="col-filter" id="cf-duree" type="number" placeholder="≥" min="0" oninput="applyFilters()"></th>
+            <th><input class="col-filter" id="cf-diagnostic" type="text" placeholder="Diagnostic…" oninput="applyFilters()"></th>
+            <th><input class="col-filter" id="cf-age" type="number" placeholder="≥" min="0" oninput="applyFilters()"></th>
+            <th>
+              <select class="col-filter" id="cf-sexe-col" onchange="applyFilters()">
+                <option value="">Ts</option>
+                <option value="M">M</option>
+                <option value="F">F</option>
+              </select>
+            </th>
+            <th><input class="col-filter" id="cf-tours" type="number" placeholder="≥" min="0" oninput="applyFilters()"></th>
+            <th>
+              <select class="col-filter" id="cf-emo-col" onchange="applyFilters()">
+                <option value="">Toutes</option>
+                <option value="anxiété">Anxiété</option>
+                <option value="tristesse">Tristesse</option>
+                <option value="joie">Joie</option>
+                <option value="colère">Colère</option>
+                <option value="peur">Peur</option>
+                <option value="neutre">Neutre</option>
+                <option value="confusion">Confusion</option>
+                <option value="désespoir">Désespoir</option>
+                <option value="surprise">Surprise</option>
+                <option value="détresse">Détresse</option>
+              </select>
+            </th>
+          </tr>
+          </thead>
+          <tbody id="corpus-body"></tbody>
+        </table>
+        <div id="empty-corpus" class="empty" style="display:none;"><div style="font-size:28px">◎</div><p>Aucun entretien ne correspond aux filtres</p></div>
+      </div>
+
+      <!-- KWIC table: one row per matching turn (shown only when query is active) -->
+      <div id="tbl-kwic" style="display:none;overflow-x:auto;">
+        <table class="kwt">
+          <thead><tr>
+            <th style="width:84px">Entretien</th>
+            <th style="width:82px">Locuteur</th>
+            <th style="width:50px">Groupe</th>
+            <th>Contexte gauche</th>
+            <th>Terme</th>
+            <th>Contexte droit</th>
+            <th style="width:70px">Émotions</th>
+          </tr></thead>
+          <tbody id="kwic-body"></tbody>
+        </table>
+        <div id="empty-kwic" class="empty" style="display:none;"><div style="font-size:28px">◎</div><p>Aucun résultat pour cette requête</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── INTERVIEW ─── -->
+<div id="view-interview" class="view">
+  <div class="bc">
+    <a onclick="navigate('exploration')">Exploration</a>
+    <span>›</span>
+    <span id="bc-id">Entretien</span>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 30px;background:var(--w);border-bottom:1px solid var(--bd);">
+    <div>
+      <h2 id="iv-title" style="font-family:'Playfair Display',serif;font-size:19px;font-weight:400;"></h2>
+      <div id="iv-meta" class="imeta"></div>
+    </div>
+    <button class="eb" onclick="exportInterview()">↓ Exporter</button>
+  </div>
+  <div class="ivlay">
+    <div class="ivm">
+      <div style="background:var(--w);border:1px solid var(--bd);border-radius:10px;padding:16px;margin-bottom:18px;">
+        <div class="ct" style="margin-bottom:8px;">Timeline émotionnelle de l'entretien</div>
+        <div style="position:relative;height:135px;"><canvas id="ch-tl"></canvas></div>
+      </div>
+      <input type="text" class="isrch" id="iv-q"
+        placeholder="Rechercher dans les tours de parole (surligne + masque les tours sans correspondance)…"
+        oninput="renderTurns()">
+      <div id="turns"></div>
+    </div>
+    <div class="ivs">
+      <div class="as">
+        <h4>Émotions</h4>
+        <div id="emo-cbs"></div>
+      </div>
+      <div class="as">
+        <h4>Prosodie</h4>
+        <div id="pros-cbs"></div>
+      </div>
+      <!-- Speaking time: checkboxes filter turns -->
+      <div class="as">
+        <h4>Temps de parole</h4>
+        <div id="iv-stats"></div>
+        <div style="font-size:9.5px;color:var(--t3);margin-top:4px;">Cliquer pour afficher / masquer les tours d'un locuteur</div>
+      </div>
+      <div class="as" id="similar-panel" style="display:none;">
+        <h4>Entretiens similaires</h4>
+        <div id="similar-list"></div>
+        <div style="font-size:9.5px;color:var(--t3);margin-top:6px;">Similarité lexicale TF-IDF · Cliquer pour ouvrir</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── CLUSTERING ─── -->
+<div id="view-clustering" class="view">
+  <div class="ph"><h2>Clustering thématique</h2><p>Regroupement automatique des entretiens par similarité lexicale (TF-IDF + k-means)</p></div>
+  <div class="clus-ctrl">
+    <label>Nombre de clusters <strong id="k-val">3</strong></label>
+    <input type="range" class="k-slider" id="k-slider" min="2" max="8" value="3"
+      oninput="document.getElementById('k-val').textContent=this.value">
+    <button class="clus-btn" id="clus-compute-btn" onclick="computeClustering()">Calculer</button>
+    <span class="clus-note">TF-IDF sur le texte des tours · projection PCA 2D · k-means (5 essais)</span>
+  </div>
+  <div class="clus-wrap">
+    <div class="clus-plot">
+      <div class="ct" style="margin-bottom:4px;">Projection 2D des entretiens</div>
+      <div class="cs" style="margin-bottom:12px;">Chaque point = un entretien · couleur = cluster · cliquer pour ouvrir</div>
+      <div style="flex:1;position:relative;min-height:0;">
+        <canvas id="ch-clus" style="display:none;"></canvas>
+      </div>
+      <div id="clus-empty" class="clus-empty">
+        <div style="font-size:32px;">⬡</div>
+        <p>Cliquez sur <strong>Calculer</strong> pour lancer le clustering</p>
+      </div>
+    </div>
+    <div class="clus-side" id="clus-cards">
+      <div style="font-size:12px;color:var(--t3);text-align:center;padding-top:40px;">Les clusters apparaîtront ici</div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── GUIDE ─── -->
+<div id="view-guide" class="view">
+  <div class="ph"><h2>Guide d'utilisation</h2><p>Documentation et aide</p></div>
+  <div class="static-page"><h3>Guide</h3><p>Cette page est réservée au guide d'utilisation. Le contenu sera ajouté prochainement.</p></div>
+</div>
+
+<!-- ─── À PROPOS ─── -->
+<div id="view-apropos" class="view">
+  <div class="ph"><h2>À propos</h2><p>Informations sur le projet</p></div>
+  <div class="static-page"><h3>À propos</h3><p>Cette page est réservée aux informations sur le projet, l'équipe et les références. Le contenu sera ajouté prochainement.</p></div>
+</div>
+
+<!-- ─── ROUE DES ÉMOTIONS ─── -->
+<div id="view-plutchik" class="view">
+  <div class="ph"><h2>Roue des émotions de Plutchik</h2><p>Visualisation interactive des émotions primaires, dyades et émotions composées</p></div>
+  <div class="plut-body">
+
+    <div class="plut-import-bar">
+      <label for="plut-json-import">Importer un corpus JSON</label>
+      <input type="file" id="plut-json-import" accept=".json" style="display:none;">
+      <span id="plut-import-status"></span>
+    </div>
+
+    <div class="plut-presets" id="plut-parea"></div>
+
+    <!-- Émotions primaires -->
+    <div class="plut-section">
+      <p class="plut-section-title">Émotions primaires</p>
+      <div class="plut-sec-body">
+        <svg id="plut-svg0" width="280" height="280" viewBox="0 0 280 280" style="display:block;flex-shrink:0;"></svg>
+        <div class="plut-sliders-grid" id="plut-sliders"></div>
+      </div>
+    </div>
+
+    <!-- Dyades primaires -->
+    <div class="plut-section">
+      <p class="plut-section-title">Dyades primaires <span>émotions adjacentes (45° d'écart)</span></p>
+      <div class="plut-sec-body">
+        <svg id="plut-svg1" width="260" height="260" viewBox="0 0 260 260" style="display:block;flex-shrink:0;"></svg>
+        <div class="plut-panel" id="plut-panel1"></div>
+      </div>
+    </div>
+
+    <!-- Dyades secondaires -->
+    <div class="plut-section">
+      <p class="plut-section-title">Dyades secondaires <span>une émotion d'écart (90°)</span></p>
+      <div class="plut-sec-body">
+        <svg id="plut-svg2" width="260" height="260" viewBox="0 0 260 260" style="display:block;flex-shrink:0;"></svg>
+        <div class="plut-panel" id="plut-panel2"></div>
+      </div>
+    </div>
+
+    <!-- Dyades tertiaires -->
+    <div class="plut-section">
+      <p class="plut-section-title">Dyades tertiaires <span>deux émotions d'écart (135°)</span></p>
+      <div class="plut-sec-body">
+        <svg id="plut-svg3" width="260" height="260" viewBox="0 0 260 260" style="display:block;flex-shrink:0;"></svg>
+        <div class="plut-panel" id="plut-panel3"></div>
+      </div>
+    </div>
+
+    <!-- Dyades opposées -->
+    <div class="plut-section">
+      <p class="plut-section-title">Dyades opposées <span>émotions diamétralement opposées (180°)</span></p>
+      <div class="plut-sec-body">
+        <svg id="plut-svg4" width="260" height="260" viewBox="0 0 260 260" style="display:block;flex-shrink:0;"></svg>
+        <div class="plut-panel" id="plut-panel4"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ─── LLM MODAL ─── -->
+<div id="llm-modal" onclick="if(event.target===this)closeLLM()">
+  <div class="llm-box">
+    <div class="llm-head">
+      <span class="llm-title">⬡ Interroger le modèle</span>
+      <button class="llm-close" onclick="closeLLM()">✕</button>
+    </div>
+    <div class="llm-endpoint-row">
+      <label>Endpoint</label>
+      <input class="llm-endpoint" id="llm-ep" type="text" value="http://localhost:11434/api/generate" placeholder="http://localhost:11434/api/generate">
+      <label style="white-space:nowrap;">Modèle</label>
+      <select class="llm-endpoint" id="llm-model" style="max-width:120px;">
+        <option value="mistral">Mistral</option>
+        <option value="llama">Llama</option>
+        <option value="qwen">Qwen</option>
+      </select>
+    </div>
+    <textarea class="llm-textarea" id="llm-input" placeholder="Ex : Quels entretiens mentionnent de l'anxiété sévère ?&#10;Ex : Résume les profils cliniques du groupe A.&#10;&#10;Le contexte du corpus filtré sera joint automatiquement."></textarea>
+    <div class="llm-response" id="llm-response"></div>
+    <div class="llm-footer">
+      <div class="llm-status">
+        <span class="llm-dot" id="llm-dot"></span>
+        <span id="llm-ctx">— entretiens dans le contexte</span>
+      </div>
+      <button class="llm-send" id="llm-send" onclick="sendLLM()">Envoyer →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── FOOTER ─── -->
+<div id="corpus-footer">
+  <div class="foot-stat" id="foot-stat">— patients · — entretiens</div>
+  <div class="foot-sep"></div>
+  <span id="foot-time" style="font-size:10.5px;letter-spacing:.04em;color:var(--t3);font-family:'IBM Plex Mono',monospace;"></span>
+  <div class="foot-sep"></div>
+  <button class="foot-btn" onclick="exportResults()">↓ Exporter CSV</button>
+</div>
+<!-- Bouton export flottant -->
+<button id="ann-export-fab" onclick="annExport()" title="Enregistrer et exporter les annotations">↓ Enregistrer et exporter les annotations</button>
+
+<!-- ─── ANNOTATION MANUELLE ─── -->
+<div id="view-annotation" class="view">
+  <div class="ph">
+    <h2>Annotation manuelle</h2>
+    <p>Chargez un texte segmenté en tours de parole et annotez les interventions du patient</p>
+  </div>
+
+  <div class="pc">
+
+    <!-- Zone de chargement -->
+    <div id="ann-import-zone" class="cc" style="max-width:720px;margin-bottom:22px;">
+      <div class="ct" style="margin-bottom:10px;">Charger un texte segmenté</div>
+      <p style="font-size:12.5px;color:var(--t2);margin-bottom:14px;">
+        Format attendu : chaque tour de parole sur une ligne, précédé de <code style="background:var(--bg);padding:1px 5px;border-radius:3px;">PATIENT:</code> ou <code style="background:var(--bg);padding:1px 5px;border-radius:3px;">PSYCHIATRE:</code>
+      </p>
+      <textarea id="ann-raw-input" placeholder="PATIENT: Je me sens très fatigué ces derniers temps, je n'arrive plus à dormir.&#10;PSYCHIATRE: Depuis combien de temps observez-vous cela ?&#10;PATIENT: Depuis environ trois semaines, peut-être un peu plus." style="width:100%;height:130px;padding:10px 13px;border:1.5px solid var(--bd);border-radius:8px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:var(--t1);background:var(--bg);resize:vertical;line-height:1.6;"></textarea>
+      <div style="display:flex;gap:9px;margin-top:10px;align-items:center;">
+        <button class="sbtn" onclick="annLoad()">Charger le texte</button>
+        <label style="font-size:12.5px;color:var(--t2);cursor:pointer;">
+          <input type="file" id="ann-file-input" accept=".txt" style="display:none;" onchange="annLoadFile(this)">
+          <span style="padding:8px 16px;border:1px solid var(--bd);border-radius:8px;background:var(--w);font-size:13px;color:var(--t2);">📂 Importer un fichier .txt</span>
+        </label>
+        <span id="ann-load-status" style="font-size:12px;color:var(--pat);"></span>
+      </div>
+    </div>
+
+    <!-- Zone d'annotation (cachée jusqu'au chargement) -->
+    <div id="ann-workspace" style="display:none;">
+
+      <!-- Barre d'info -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+        <span id="ann-turn-counter" style="font-size:12.5px;color:var(--t2);background:var(--w);border:1px solid var(--bd);padding:4px 12px;border-radius:100px;"></span>
+        <button class="eb" onclick="annReset()" title="Décharger ce texte et en charger un nouveau">⟳ Charger un autre texte</button>
+      </div>
+
+      <!-- Tours de parole -->
+      <div id="ann-turns" style="max-width:820px;display:flex;flex-direction:column;gap:10px;"></div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Panneau d'annotation flottant -->
+<div class="ann-panel" id="ann-panel">
+  <div class="ann-panel-hd">
+    <span id="ann-panel-title">Annoter la sélection</span>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button onclick="annToggleMode()" id="ann-mode-btn" title="Basculer entre mode guidé et mode libre"
+        style="font-size:10px;padding:2px 9px;border:1px solid rgba(255,255,255,.4);border-radius:100px;opacity:1;background:rgba(255,255,255,.15);">
+        Mode libre
+      </button>
+      <button onclick="annClosePanel()" title="Fermer">✕</button>
+    </div>
+  </div>
+
+  <!-- Extrait sélectionné -->
+  <div style="padding:10px 16px 0;flex-shrink:0;">
+    <!-- Mode littérale / inférée -->
+    <div style="display:flex;gap:6px;margin-bottom:10px;">
+      <button id="ann-mode-litterale" onclick="annSetAnnotationMode('litterale')"
+        style="flex:1;padding:5px 8px;border-radius:100px;border:1.5px solid var(--bd);background:var(--bg);cursor:pointer;font-size:11.5px;font-family:'IBM Plex Sans',sans-serif;color:var(--t2);transition:all .12s;">
+        Littérale ○
+      </button>
+      <button id="ann-mode-inferee" onclick="annSetAnnotationMode('inferee')"
+        style="flex:1;padding:5px 8px;border-radius:100px;border:1.5px solid var(--bd);background:var(--bg);cursor:pointer;font-size:11.5px;font-family:'IBM Plex Sans',sans-serif;color:var(--t2);transition:all .12s;">
+        Inférée ○
+      </button>
+    </div>
+    <div class="ann-panel-sel" id="ann-panel-sel">—</div>
+  </div>
+
+  <!-- MODE GUIDÉ -->
+  <div id="ann-wizard" style="display:none;flex:1;display:none;flex-direction:column;">
+    <!-- Barre de progression -->
+    <div style="padding:10px 16px 0;flex-shrink:0;">
+      <div style="display:flex;gap:4px;margin-bottom:4px;" id="ann-wiz-dots"></div>
+      <div style="font-size:10px;color:var(--t3);" id="ann-wiz-step-label"></div>
+    </div>
+    <!-- Contenu de l'étape -->
+    <div style="flex:1;overflow-y:auto;padding:14px 16px;" id="ann-wiz-content"></div>
+    <!-- Nav bas -->
+    <div style="padding:12px 16px;border-top:1px solid var(--bd);display:flex;gap:8px;flex-shrink:0;">
+      <button id="ann-wiz-back" onclick="annWizBack()"
+        style="flex:1;padding:8px;border:1.5px solid var(--bd);border-radius:8px;background:var(--bg);cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:var(--t2);">
+        ← Retour
+      </button>
+      <button id="ann-wiz-next" onclick="annWizNext()"
+        style="flex:2;padding:8px;border:none;border-radius:8px;background:var(--acc);color:#fff;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;">
+        Suivant →
+      </button>
+    </div>
+  </div>
+
+  <!-- MODE LIBRE -->
+  <div id="ann-freeform" class="ann-panel-body" style="display:none;">
+    <!-- Émotions -->
+    <div class="ann-section">
+      <div class="ann-section-title" style="display:flex;align-items:center;justify-content:space-between;">
+        Émotions <span id="ann-emo-required" style="font-size:10px;color:#C0392B;display:none;">⚠ obligatoire</span>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:8px;">
+        <button onclick="annToggleSubSection('roue')"   id="ann-btn-roue"   style="flex:1;padding:2px 8px;border-radius:100px;border:1.5px solid var(--bd);background:var(--bg);cursor:pointer;font-size:11.5px;font-family:'IBM Plex Sans',sans-serif;color:var(--t2);">Roue</button>
+        <button onclick="annToggleSubSection('dyades')" id="ann-btn-dyades" style="flex:1;padding:2px 8px;border-radius:100px;border:1.5px solid var(--bd);background:var(--bg);cursor:pointer;font-size:11.5px;font-family:'IBM Plex Sans',sans-serif;color:var(--t2);">Dyades</button>
+      </div>
+      <div id="ann-sub-roue"   style="display:none;"></div>
+      <div id="ann-sub-dyades" style="display:none;"></div>
+      <input type="text" id="ann-emo-free" placeholder="Émotion non listée (saisie libre)…"
+        style="margin-top:8px;width:100%;padding:5px 9px;border:1.5px solid var(--bd);border-radius:6px;font-size:12px;font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--t1);box-sizing:border-box;"
+        oninput="annPanelState.emotionLibre=this.value">
+    </div>
+        <!-- Polarité -->
+    <div class="ann-section">
+      <div class="ann-section-title">Polarité</div>
+      <div class="ann-chips" id="ann-chips-pol"></div>
+    </div>
+    <!-- Intensité -->
+    <div class="ann-section">
+      <div class="ann-section-title">Intensité</div>
+      <div class="ann-chips" id="ann-chips-int"></div>
+    </div>
+    <!-- Modificateurs -->
+    <div class="ann-section">
+      <div class="ann-section-title">Modificateurs</div>
+      <div class="ann-chips" id="ann-chips-mod"></div>
+    </div>
+    <!-- Rôles -->
+    <div class="ann-section">
+      <div class="ann-section-title">Rôles émotionnels</div>
+      <div id="ann-roles-free"></div>
+    </div>
+    <!-- Commentaire -->
+    <div class="ann-section">
+      <div class="ann-section-title">Commentaire libre</div>
+      <textarea class="ann-comment" id="ann-comment" placeholder="Observations, doutes, contexte…"></textarea>
+    </div>
+    <button class="ann-validate-btn" onclick="annValidate()">✓ Valider l'annotation</button>
+  </div>
+</div>
+
+<!-- ─── GESTION DES ANNOTATIONS ─── -->
+<div id="view-gestion" class="view">
+  <div class="ph">
+    <h2>Gestion des annotations</h2>
+    <p>Accord inter-annotateurs, comparaison et heatmap</p>
+  </div>
+  <div class="pc" style="padding-right:300px;">
+
+    <!-- Zone résultats -->
+    <div id="gest-comparison" style="display:none;max-width:820px;"></div>
+
+  </div>
+</div>
+
+<!-- ─── PANNEAU FLOTTANT GESTION ─── -->
+<div id="gest-panel" style="display:none;position:fixed;right:0;top:0;width:280px;height:100vh;background:var(--w);border-left:1.5px solid var(--bd);box-shadow:-4px 0 20px rgba(0,0,0,.08);z-index:150;display:flex;flex-direction:column;overflow-y:auto;padding:20px 16px;box-sizing:border-box;">
+
+  <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--t3);margin-bottom:16px;">Gestion des annotations</div>
+
+  <!-- Import -->
+  <div style="margin-bottom:16px;">
+    <div style="font-size:12.5px;font-weight:500;color:var(--t1);margin-bottom:4px;">📥 Import &amp; fusion</div>
+    <div style="font-size:11px;color:var(--t3);margin-bottom:8px;">Annotations JSON de plusieurs annotateurs</div>
+    <input type="file" id="gest-json-input" accept=".json" multiple onchange="gestLoadJSON(this)" style="display:none;">
+    <label for="gest-json-input" class="sbtn" style="display:block;text-align:center;font-size:12px;padding:6px;cursor:pointer;">Charger des JSON</label>
+    <div id="gest-files-list" style="display:none;margin-top:10px;">
+      <div style="font-size:10px;color:var(--t3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Fichiers chargés</div>
+      <div id="gest-files-items" style="display:flex;flex-direction:column;gap:5px;"></div>
+    </div>
+  </div>
+
+  <div style="border-top:1px solid var(--bd);margin-bottom:12px;"></div>
+  <div style="font-size:11px;color:var(--t3);font-style:italic;margin-bottom:10px;">Kappa · Alpha · Heatmap calculés automatiquement dès 2 fichiers chargés.</div>
+  <span id="gest-export-btn" onclick="gestExportScores()"
+    style="display:none;text-align:center;padding:7px;border-radius:8px;border:1.5px solid var(--pat);font-size:12px;cursor:pointer;background:var(--pat);color:#fff;font-family:'IBM Plex Sans',sans-serif;font-weight:500;">
+    ↓ Exporter les scores (JSON)
+  </span>
+
+</div>
+
+</div><!-- #main -->
+
+<script>
+// ══════════════════════════════════════════
+//  CONSTANTS
+// ══════════════════════════════════════════
+const EMO={
+  'joie':'#F59E0B','tristesse':'#6366F1','anxiété':'#EF4444','colère':'#DC2626',
+  'peur':'#7C3AED','neutre':'#9CA3AF','confusion':'#EC4899','désespoir':'#374151',
+  'surprise':'#06B6D4','détresse':'#E11D48'
+};
+const GC   ={A:'#4E72D6',N:'#2E7D5F',P:'#C47A2E',C:'#8B4A8B'};
+const GCL  ={A:'#EEF2FF',N:'#EDF7F3',P:'#FEF3E8',C:'#F5EEF5'};
+const GNAMES={A:'À risque',N:'Non à risque',P:'Psychotique',C:'Contrôle'};
+
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+let currentIV=null;
+let ivEmoFilters=new Set();
+let ivProFilters=new Set();
+let ivSpeakerFilters=new Set(['patient','psychiatre']); // both on by default
+let dbCharts={}, ivChart=null;
+// Filtered corpus for default view — pre-filled so Exploration renders immediately
+let filteredCorpus=typeof CORPUS!=='undefined'?[...CORPUS]:[];
+// Filtered turns for KWIC view
+let filteredTurns=[];
+
+// ══════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════
+function allTurns(){ return CORPUS.flatMap(e=>e.tours.map(t=>({...t,ent:e}))); }
+function ec(e){ return EMO[e]||'#9CA3AF'; }
+function gc(g){ return GC[g]||'#999'; }
+function gcl(g){ return GCL[g]||'#eee'; }
+function gname(g){ return GNAMES[g]||g; }
+function countWords(t){ return t.trim().split(/\s+/).filter(Boolean).length; }
+function kwic(text,q,len=42){
+  if(!q) return {l:'',kw:text.slice(0,60)+(text.length>60?'…':''),r:''};
+  try{
+    const re=new RegExp(q,'i'),m=text.match(re);
+    if(!m) return {l:text.slice(0,60),kw:'',r:''};
+    const i=m.index;
+    return {l:text.slice(Math.max(0,i-len),i),kw:m[0],r:text.slice(i+m[0].length,i+m[0].length+len)};
+  }catch{return {l:'',kw:'',r:''};}
+}
+function hl(text,q){
+  if(!q) return text;
+  try{return text.replace(new RegExp(`(${q})`,'gi'),'<mark class="hl">$1</mark>');}catch{return text;}
+}
+function matchQ(text,q){
+  if(!q) return true;
+  try{return new RegExp(q,'i').test(text);}catch{return text.toLowerCase().includes(q.toLowerCase());}
+}
+function emoDotsHtml(emotions){
+  return emotions.slice(0,4).map(e=>`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${ec(e)};" title="${e}"></span>`).join('');
+}
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+function initCounts(){
+  const pats=new Set(CORPUS.map(e=>e.patient)).size;
+  const psys=new Set(CORPUS.map(e=>e.psychiatre)).size;
+  const turns=CORPUS.reduce((s,e)=>s+e.tours.length,0);
+  const durs=CORPUS.map(e=>e.duree);
+  const avg=Math.round(durs.reduce((a,b)=>a+b,0)/durs.length);
+  document.getElementById('st-ent').textContent=CORPUS.length;
+  document.getElementById('st-ent-sub').textContent=`${Object.keys(GC).length} groupes cliniques`;
+  document.getElementById('st-pat').textContent=pats;
+  document.getElementById('st-pat-sub').textContent=`${psys} psychiatres`;
+  document.getElementById('st-turns').textContent=turns;
+  document.getElementById('st-dur').innerHTML=avg+'<span style="font-size:14px">min</span>';
+  document.getElementById('st-dur-sub').textContent=`min ${Math.min(...durs)} — max ${Math.max(...durs)} min`;
+}
+
+// ══════════════════════════════════════════
+//  NAVIGATE
+// ══════════════════════════════════════════
+function navigate(view,params={}){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nav').forEach(n=>n.classList.remove('active'));
+  document.getElementById('view-'+view).classList.add('active');
+  document.querySelector(`.nav[data-view="${view}"]`)?.classList.add('active');
+  if(view==='dashboard')   renderDashboard();
+  if(view==='exploration') { applyFilters(); }
+  if(view==='interview'&&params.id) renderInterview(params.id);
+  if(view==='plutchik')    plutRenderAll();
+  // Masquer le footer sur les pages sans corpus
+  // Bouton export flottant visible uniquement sur la page annotation
+  const fab = document.getElementById('ann-export-fab');
+  if (fab) fab.classList.toggle('visible', view === 'annotation' && annTurns.length > 0);
+  // Panneau gestion
+  const gestPanel = document.getElementById('gest-panel');
+  if (gestPanel) gestPanel.style.display = (view === 'gestion') ? 'flex' : 'none';
+  const footer = document.getElementById('corpus-footer');
+  if(footer) footer.style.display = (view === 'exploration') ? '' : 'none';
+  // Fermer le panneau d'annotation flottant en changeant de page
+  const panel = document.getElementById('ann-panel');
+  if(panel) panel.classList.remove('open');
+  document.getElementById('main').scrollTop=0;
+}
+
+// ══════════════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════════════
+function renderDashboard(){
+  Object.values(dbCharts).forEach(c=>c?.destroy?.());
+  dbCharts={};
+  const groups=['A','N','P','C'];
+  const gcolors=groups.map(g=>gc(g));
+  const glabels=groups.map(g=>`${g} — ${gname(g)}`);
+
+  // Groups bar
+  dbCharts.groups=new Chart(document.getElementById('ch-groups'),{
+    type:'bar',
+    data:{labels:glabels,datasets:[{data:groups.map(g=>CORPUS.filter(e=>e.groupe===g).length),backgroundColor:gcolors.map(c=>c+'CC'),borderRadius:6,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{y:{beginAtZero:true,ticks:{stepSize:1},grid:{color:'#F0EDE6'}},x:{grid:{display:false},ticks:{font:{size:10}}}}}
+  });
+
+  // Emotions donut
+  const ecounts={};
+  allTurns().forEach(t=>t.emotions.forEach(e=>{ecounts[e]=(ecounts[e]||0)+1;}));
+  const sorted=Object.entries(ecounts).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('em-legend').innerHTML=sorted.map(([e,c])=>
+    `<span style="display:flex;align-items:center;gap:3px;font-size:10.5px;"><span style="width:8px;height:8px;border-radius:50%;background:${ec(e)};flex-shrink:0;"></span>${e} <b style="font-weight:500">${c}</b></span>`).join('');
+  dbCharts.emo=new Chart(document.getElementById('ch-emo'),{
+    type:'doughnut',
+    data:{labels:sorted.map(([e])=>e),datasets:[{data:sorted.map(([,c])=>c),backgroundColor:sorted.map(([e])=>ec(e)),borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:false}}}
+  });
+
+  // Duration by group
+  dbCharts.dur=new Chart(document.getElementById('ch-dur'),{
+    type:'bar',
+    data:{labels:glabels,datasets:[{data:groups.map(g=>{const es=CORPUS.filter(e=>e.groupe===g);return es.length?Math.round(es.reduce((s,e)=>s+e.duree,0)/es.length):0;}),backgroundColor:gcolors.map(c=>c+'BB'),borderRadius:5,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},
+      scales:{x:{beginAtZero:true,grid:{color:'#F0EDE6'}},y:{grid:{display:false},ticks:{font:{size:10}}}}}
+  });
+
+  // Emotions stacked by group
+  const topEmo=['anxiété','neutre','tristesse','peur','joie','confusion'];
+  dbCharts.ebg=new Chart(document.getElementById('ch-ebg'),{
+    type:'bar',
+    data:{labels:glabels,datasets:topEmo.map(em=>({
+      label:em,borderRadius:3,
+      data:groups.map(g=>allTurns().filter(t=>t.ent.groupe===g).reduce((s,t)=>s+(t.emotions.includes(em)?1:0),0)),
+      backgroundColor:ec(em)+'BB'
+    }))},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{font:{size:10},padding:8,boxWidth:10,usePointStyle:true}}},
+      scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:10}}},y:{stacked:true,grid:{color:'#F0EDE6'}}}}
+  });
+
+  // NEW: Emotion distribution patient vs psychiatre (grouped bar)
+  const allEmos=Object.keys(EMO);
+  const patCounts=allEmos.map(em=>allTurns().filter(t=>t.locuteur==='patient').reduce((s,t)=>s+(t.emotions.includes(em)?1:0),0));
+  const psyCounts=allEmos.map(em=>allTurns().filter(t=>t.locuteur==='psychiatre').reduce((s,t)=>s+(t.emotions.includes(em)?1:0),0));
+  const nonZero=allEmos.map((em,i)=>patCounts[i]+psyCounts[i]>0);
+  const emoLabels=allEmos.filter((_,i)=>nonZero[i]);
+  dbCharts.emoSpk=new Chart(document.getElementById('ch-emo-spk'),{
+    type:'bar',
+    data:{labels:emoLabels,datasets:[
+      {label:'Patient',data:patCounts.filter((_,i)=>nonZero[i]),backgroundColor:'#2E7D5F99',borderRadius:4,borderSkipped:false},
+      {label:'Psychiatre',data:psyCounts.filter((_,i)=>nonZero[i]),backgroundColor:'#8B4A4A99',borderRadius:4,borderSkipped:false}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{font:{size:11},padding:10,boxWidth:10,usePointStyle:true}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{beginAtZero:true,grid:{color:'#F0EDE6'}}}}
+  });
+
+  // NEW: Patient vs psychiatre split donut
+  const totPat=allTurns().filter(t=>t.locuteur==='patient').length;
+  const totPsy=allTurns().filter(t=>t.locuteur==='psychiatre').length;
+  dbCharts.spkSplit=new Chart(document.getElementById('ch-spk-split'),{
+    type:'doughnut',
+    data:{labels:['Patient','Psychiatre'],datasets:[{data:[totPat,totPsy],backgroundColor:['#2E7D5F','#8B4A4A'],borderWidth:3,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'58%',
+      plugins:{legend:{position:'bottom',labels:{font:{size:12},padding:16,usePointStyle:true}}}}
+  });
+
+  // PANSS scores
+  dbCharts.scores=new Chart(document.getElementById('ch-scores'),{
+    type:'bar',
+    data:{labels:CORPUS.map(e=>e.id),datasets:[{data:CORPUS.map(e=>e.score_clinique),backgroundColor:CORPUS.map(e=>gc(e.groupe)+'BB'),borderRadius:4,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:9},maxRotation:45}},y:{grid:{color:'#F0EDE6'}}}}
+  });
+}
+
+// ══════════════════════════════════════════
+//  EXPLORATION — FILTERS
+// ══════════════════════════════════════════
+function applyFilters(){
+  const q=document.getElementById('q').value.trim();
+  const grps=['A','N','P','C'].filter(g=>document.getElementById('f-g'+g.toLowerCase()).checked);
+  const fSex=document.getElementById('f-sexe').value;
+  const fEmo=document.getElementById('f-emo').value;
+  const fPros=document.getElementById('f-pros').value;
+  const fAge=parseInt(document.getElementById('f-age').value)||0;
+
+  // Column-level filters
+  const cfId=(document.getElementById('cf-id')?.value||'').trim().toLowerCase();
+  const cfGroupe=(document.getElementById('cf-groupe')?.value||'');
+  const cfDate=(document.getElementById('cf-date')?.value||'').trim();
+  const cfDuree=parseInt(document.getElementById('cf-duree')?.value)||0;
+  const cfDiag=(document.getElementById('cf-diagnostic')?.value||'').trim().toLowerCase();
+  const cfAge=parseInt(document.getElementById('cf-age')?.value)||0;
+  const cfSexe=(document.getElementById('cf-sexe-col')?.value||'');
+  const cfTours=parseInt(document.getElementById('cf-tours')?.value)||0;
+  const cfEmoCol=(document.getElementById('cf-emo-col')?.value||'');
+
+  // Filter corpus
+  let corpus=CORPUS.filter(e=>grps.includes(e.groupe));
+  if(fSex)    corpus=corpus.filter(e=>e.sexe===fSex);
+  if(fAge)    corpus=corpus.filter(e=>e.age>=fAge);
+  // Column filters
+  if(cfId)     corpus=corpus.filter(e=>e.id.toLowerCase().includes(cfId));
+  if(cfGroupe) corpus=corpus.filter(e=>e.groupe===cfGroupe);
+  if(cfDate)   corpus=corpus.filter(e=>e.date.includes(cfDate));
+  if(cfDuree)  corpus=corpus.filter(e=>e.duree>=cfDuree);
+  if(cfDiag)   corpus=corpus.filter(e=>e.diagnostic.toLowerCase().includes(cfDiag));
+  if(cfAge)    corpus=corpus.filter(e=>e.age>=cfAge);
+  if(cfSexe)   corpus=corpus.filter(e=>e.sexe===cfSexe);
+  if(cfTours)  corpus=corpus.filter(e=>e.tours.length>=cfTours);
+  if(cfEmoCol) corpus=corpus.filter(e=>e.tours.some(t=>t.emotions.includes(cfEmoCol)));
+
+  // Emotion/prosodie/query filter: keep interview if at least one turn matches
+  if(fEmo||fPros||q){
+    corpus=corpus.filter(e=>e.tours.some(t=>{
+      if(fEmo&&!t.emotions.includes(fEmo)) return false;
+      if(fPros&&!t.prosodie.includes(fPros)) return false;
+      if(q&&!matchQ(t.texte,q)) return false;
+      return true;
+    }));
+  }
+  filteredCorpus=corpus;
+
+  if(q){
+    // KWIC mode: one row per matching turn
+    let turns=allTurns().filter(t=>grps.includes(t.ent.groupe));
+    if(fSex)  turns=turns.filter(t=>t.ent.sexe===fSex);
+    if(fAge)  turns=turns.filter(t=>t.ent.age>=fAge);
+    if(fEmo)  turns=turns.filter(t=>t.emotions.includes(fEmo));
+    if(fPros) turns=turns.filter(t=>t.prosodie.includes(fPros));
+    turns=turns.filter(t=>matchQ(t.texte,q));
+    filteredTurns=turns;
+    showKWIC(q);
+  } else {
+    showDefault();
+  }
+}
+
+// ── Default view (one row per interview) ──
+function showDefault(){
+  document.getElementById('tbl-default').style.display='block';
+  document.getElementById('tbl-kwic').style.display='none';
+  renderCorpusTable();
+}
+
+function renderCorpusTable(){
+  const body=document.getElementById('corpus-body');
+  const empty=document.getElementById('empty-corpus');
+  document.getElementById('rc').innerHTML=`<strong>${filteredCorpus.length}</strong> entretien(s)`;
+  if(!filteredCorpus.length){body.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  body.innerHTML=filteredCorpus.map(e=>{
+    const g=e.groupe;
+    const allEmos=[...new Set(e.tours.flatMap(t=>t.emotions))];
+    const dots=allEmos.slice(0,5).map(em=>`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${ec(em)};" title="${em}"></span>`).join('');
+    return `<tr onclick="navigate('interview',{id:'${e.id}'})">
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6B6560;">${e.id}</span></td>
+      <td><span style="display:inline-block;padding:2px 6px;border-radius:4px;font-size:10.5px;background:${gcl(g)};color:${gc(g)};font-weight:500;" title="${gname(g)}">${g}</span></td>
+      <td style="font-size:11.5px;color:var(--t2);">${e.date}</td>
+      <td style="font-size:11.5px;color:var(--t2);text-align:center;">${e.duree} min</td>
+      <td style="font-size:12px;color:var(--t1);">${e.diagnostic}</td>
+      <td style="font-size:11.5px;color:var(--t2);text-align:center;">${e.age}</td>
+      <td style="font-size:11.5px;color:var(--t2);text-align:center;">${e.sexe}</td>
+      <td style="font-size:11.5px;color:var(--t2);text-align:center;">${e.tours.length}</td>
+      <td><div style="display:flex;gap:3px;align-items:center;">${dots}</div></td>
+    </tr>`;
+  }).join('');
+  updateFooter();
+}
+
+// ── KWIC view (one row per turn, with Locuteur) ──
+function showKWIC(q){
+  document.getElementById('tbl-default').style.display='none';
+  document.getElementById('tbl-kwic').style.display='block';
+  renderKWIC(q);
+}
+
+function renderKWIC(q=''){
+  const body=document.getElementById('kwic-body');
+  const empty=document.getElementById('empty-kwic');
+  document.getElementById('rc').innerHTML=`<strong>${filteredTurns.length}</strong> occurrence(s) dans <strong>${new Set(filteredTurns.map(t=>t.ent.id)).size}</strong> entretien(s)`;
+  if(!filteredTurns.length){body.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  body.innerHTML=filteredTurns.map(t=>{
+    const ctx=kwic(t.texte,q);
+    const g=t.ent.groupe;
+    return `<tr onclick="navigate('interview',{id:'${t.ent.id}'})">
+      <td><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6B6560">${t.ent.id}</span></td>
+      <td><span class="spb ${t.locuteur}">${t.locuteur==='patient'?'Patient':'Psy.'}</span></td>
+      <td><span style="display:inline-block;padding:2px 6px;border-radius:4px;font-size:10.5px;background:${gcl(g)};color:${gc(g)};font-weight:500;" title="${gname(g)}">${g}</span></td>
+      <td class="kl">${ctx.l}</td>
+      <td><span class="kk">${ctx.kw||'—'}</span></td>
+      <td class="kr">${ctx.r}</td>
+      <td><div style="display:flex;gap:3px;align-items:center;">${emoDotsHtml(t.emotions)}</div></td>
+    </tr>`;
+  }).join('');
+}
+
+function sortRes(by){
+  const q=document.getElementById('q').value.trim();
+  if(q){
+    if(by==='date')    filteredTurns.sort((a,b)=>a.ent.date.localeCompare(b.ent.date));
+    if(by==='speaker') filteredTurns.sort((a,b)=>a.locuteur.localeCompare(b.locuteur));
+    if(by==='group')   filteredTurns.sort((a,b)=>a.ent.groupe.localeCompare(b.ent.groupe));
+    renderKWIC(q);
+  } else {
+    if(by==='date')  filteredCorpus.sort((a,b)=>a.date.localeCompare(b.date));
+    if(by==='group') filteredCorpus.sort((a,b)=>a.groupe.localeCompare(b.groupe));
+    if(by==='score') filteredCorpus.sort((a,b)=>b.score_clinique-a.score_clinique);
+    if(by==='duree') filteredCorpus.sort((a,b)=>b.duree-a.duree);
+    renderCorpusTable();
+  }
+}
+
+// ── Column sort (click on header) ──
+let _colSortState={col:null,dir:1};
+function colSort(col){
+  if(_colSortState.col===col){_colSortState.dir*=-1;}else{_colSortState.col=col;_colSortState.dir=1;}
+  const dir=_colSortState.dir;
+  // Update arrow indicators
+  ['id','groupe','date','duree','diagnostic','age','sexe','tours'].forEach(c=>{
+    const el=document.getElementById('sa-'+c);
+    const th=el?.closest('th');
+    if(!el)return;
+    if(c===col){el.textContent=dir===1?'▲':'▼';th?.classList.toggle('asc',dir===1);th?.classList.toggle('desc',dir===-1);}
+    else{el.textContent='';th?.classList.remove('asc','desc');}
+  });
+  filteredCorpus.sort((a,b)=>{
+    let va,vb;
+    if(col==='id')          {va=a.id;vb=b.id;}
+    else if(col==='groupe') {va=a.groupe;vb=b.groupe;}
+    else if(col==='date')   {va=a.date;vb=b.date;}
+    else if(col==='duree')  {return dir*(a.duree-b.duree);}
+    else if(col==='diagnostic'){va=a.diagnostic;vb=b.diagnostic;}
+    else if(col==='age')    {return dir*(a.age-b.age);}
+    else if(col==='sexe')   {va=a.sexe;vb=b.sexe;}
+    else if(col==='tours')  {return dir*(a.tours.length-b.tours.length);}
+    else return 0;
+    return dir*(va<vb?-1:va>vb?1:0);
+  });
+  renderCorpusTable();
+}
+
+function exportResults(){
+  const q=document.getElementById('q').value.trim();
+  let content, filename;
+  if(q){
+    const h='ID_Entretien,Locuteur,Groupe,Date,Texte,Emotions,Prosodie\n';
+    const rows=filteredTurns.map(t=>`${t.ent.id},${t.locuteur},${t.ent.groupe},${t.ent.date},"${t.texte.replace(/"/g,'""')}","${t.emotions.join(';')}","${t.prosodie.join(';')}"`).join('\n');
+    content=h+rows; filename='resultats_kwic.csv';
+  } else {
+    const h='ID,Patient,Psychiatre,Groupe,Date,Duree,Age,Sexe,Diagnostic,Score,NbTours\n';
+    const rows=filteredCorpus.map(e=>`${e.id},${e.patient},${e.psychiatre},${e.groupe},${e.date},${e.duree},${e.age},${e.sexe},"${e.diagnostic}",${e.score_clinique},${e.tours.length}`).join('\n');
+    content=h+rows; filename='resultats_corpus.csv';
+  }
+  dl(content,filename);
+}
+
+// ══════════════════════════════════════════
+//  INTERVIEW VIEW
+// ══════════════════════════════════════════
+function renderInterview(id){
+  const ent=CORPUS.find(e=>e.id===id);
+  if(!ent) return;
+  currentIV=ent;
+  document.getElementById('bc-id').textContent=id;
+  document.getElementById('iv-title').textContent=`Entretien ${id} — ${ent.patient}`;
+  document.getElementById('iv-meta').innerHTML=[
+    `<span class="mt" style="background:${gcl(ent.groupe)};color:${gc(ent.groupe)};">Groupe ${ent.groupe} — ${gname(ent.groupe)}</span>`,
+    `<span class="mt">${ent.date}</span>`,`<span class="mt">${ent.duree} min</span>`,
+    `<span class="mt">${ent.diagnostic}</span>`,`<span class="mt">${ent.age} ans · ${ent.sexe}</span>`,
+    `<span class="mt">Score PANSS : ${ent.score_clinique}</span>`,`<span class="mt">${ent.psychiatre}</span>`
+  ].join('');
+
+  const allEmo=[...new Set(ent.tours.flatMap(t=>t.emotions))];
+  const allPros=[...new Set(ent.tours.flatMap(t=>t.prosodie))];
+  ivEmoFilters=new Set(allEmo);
+  ivProFilters=new Set(allPros);
+  ivSpeakerFilters=new Set(['patient','psychiatre']);
+
+  renderEmoProsBars(ent, allEmo, allPros);
+  renderIVStats(ent);
+  renderTurns();
+  renderTimeline(ent);
+  document.getElementById('iv-q').value='';
+  renderSimilarInterviews(id);
+}
+
+// ── Emotion & Prosodie bars — filtered by active speakers ──
+function renderEmoProsBars(ent, allEmo, allPros){
+  if(!allEmo) allEmo=[...new Set(ent.tours.flatMap(t=>t.emotions))];
+  if(!allPros) allPros=[...new Set(ent.tours.flatMap(t=>t.prosodie))];
+
+  const activeTours=ent.tours.filter(t=>ivSpeakerFilters.has(t.locuteur));
+
+  // Emotion counts — only active speakers
+  const ecounts={};
+  activeTours.forEach(t=>t.emotions.forEach(e=>{ecounts[e]=(ecounts[e]||0)+1;}));
+  const maxEc=Math.max(...Object.values(ecounts),1);
+
+  document.getElementById('emo-cbs').innerHTML=
+    [...allEmo].sort((a,b)=>(ecounts[b]||0)-(ecounts[a]||0)).map(e=>{
+      const checked=ivEmoFilters.has(e)?'checked':'';
+      const count=ecounts[e]||0;
+      return `<div class="erow">
+      <input type="checkbox" id="ecb-${e}" ${checked} onchange="toggleEmo('${e}',this.checked)">
+      <span class="edot" style="background:${ec(e)}"></span>
+      <span class="enam">${e}</span>
+      <div class="ebar"><div class="ebarfill" style="width:${Math.round(count/maxEc*100)}%;background:${ec(e)};"></div></div>
+      <span class="eval">${count}</span>
+    </div>`;}).join('');
+
+  // Prosodie counts — only active speakers
+  const pcounts={};
+  activeTours.forEach(t=>t.prosodie.forEach(p=>{pcounts[p]=(pcounts[p]||0)+1;}));
+  const maxPc=Math.max(...Object.values(pcounts),1);
+
+  document.getElementById('pros-cbs').innerHTML=
+    [...allPros].sort((a,b)=>(pcounts[b]||0)-(pcounts[a]||0)).map(p=>{
+      const checked=ivProFilters.has(p)?'checked':'';
+      const count=pcounts[p]||0;
+      return `<div class="erow">
+      <input type="checkbox" id="pcb-${p}" ${checked} onchange="togglePros('${p}',this.checked)">
+      <span class="edot" style="background:var(--acc);opacity:.55;border-radius:3px;"></span>
+      <span class="enam">${p}</span>
+      <div class="ebar"><div class="ebarfill" style="width:${Math.round(count/maxPc*100)}%;background:var(--acc);opacity:.7;"></div></div>
+      <span class="eval">${count}</span>
+    </div>`;}).join('');
+}
+
+// Speaking time with clickable filter rows
+function renderIVStats(ent){
+  const wc={patient:0,psychiatre:0};
+  ent.tours.forEach(t=>{wc[t.locuteur]=(wc[t.locuteur]||0)+countWords(t.texte);});
+  const total=wc.patient+wc.psychiatre||1;
+  const pPct=Math.round(wc.patient/total*100);
+  const dPct=Math.round(wc.psychiatre/total*100);
+
+  document.getElementById('iv-stats').innerHTML=`
+    <div class="spkrow active-spk patient-row" id="spkrow-patient" onclick="toggleSpeaker('patient',this)">
+      <input class="spk-cb" type="checkbox" id="spkcb-patient" checked onclick="event.stopPropagation();toggleSpeaker('patient',document.getElementById('spkrow-patient'))">
+      <span class="spklbl" style="color:var(--pat)">Patient</span>
+      <div class="spkbar"><div class="spkfill" style="width:${pPct}%;background:var(--pat);"></div></div>
+      <span class="spkpct" style="color:var(--pat)">${pPct}%</span>
+      <span class="spkwords">${wc.patient} mots</span>
+    </div>
+    <div class="spkrow active-spk psychiatre-row" id="spkrow-psychiatre" onclick="toggleSpeaker('psychiatre',this)">
+      <input class="spk-cb" type="checkbox" id="spkcb-psychiatre" checked onclick="event.stopPropagation();toggleSpeaker('psychiatre',document.getElementById('spkrow-psychiatre'))">
+      <span class="spklbl" style="color:var(--psy)">Psychiatre</span>
+      <div class="spkbar"><div class="spkfill" style="width:${dPct}%;background:var(--psy);"></div></div>
+      <span class="spkpct" style="color:var(--psy)">${dPct}%</span>
+      <span class="spkwords">${wc.psychiatre} mots</span>
+    </div>`;
+}
+
+function toggleSpeaker(spk, row){
+  const cb=document.getElementById('spkcb-'+spk);
+  // If click came from the row (not the checkbox), toggle the checkbox
+  if(document.activeElement!==cb) cb.checked=!cb.checked;
+  if(cb.checked){
+    ivSpeakerFilters.add(spk);
+    row.classList.remove('inactive-spk');
+    row.classList.add('active-spk');
+  } else {
+    ivSpeakerFilters.delete(spk);
+    row.classList.remove('active-spk');
+    row.classList.add('inactive-spk');
+  }
+  renderTurns();
+  if(currentIV) renderEmoProsBars(currentIV);
+}
+
+function renderTurns(){
+  if(!currentIV) return;
+  const q=document.getElementById('iv-q').value;
+  document.getElementById('turns').innerHTML=currentIV.tours.map(t=>{
+    const isPat=t.locuteur==='patient';
+    const spkOk=ivSpeakerFilters.has(t.locuteur);
+    const emoOk=t.emotions.some(e=>ivEmoFilters.has(e));
+    const prosOk=t.prosodie.some(p=>ivProFilters.has(p));
+    const qOk=!q||(()=>{try{return new RegExp(q,'i').test(t.texte);}catch{return t.texte.toLowerCase().includes(q.toLowerCase());}})();
+    const show=spkOk&&emoOk&&prosOk&&qOk;
+    const txt=q?hl(t.texte,q):t.texte;
+    const etags=t.emotions.map(e=>`<span class="etag" style="background:${ec(e)}22;color:${ec(e)};border:1px solid ${ec(e)}44;border-radius:100px;"><span style="opacity:.55;font-size:9.5px;margin-right:2px;">Emo.</span>${e}</span>`).join('');
+    const ptag=t.prosodie.map(p=>`<span class="etag" style="background:#4E72D622;color:var(--acc);border:1px solid #4E72D6;"><span style="opacity:.6;font-size:9.5px;margin-right:2px;">Pros.</span>${p}</span>`).join('');    return `<div class="turn ${t.locuteur}${show?'':' hidden'}">
+      <div class="tcnt">
+        <div class="tmeta" style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;"><div class="tspk ${t.locuteur}" style="margin-top:0;flex-shrink:0;">${isPat?'Pt':'Dr'}</div>${isPat?'Patient':'Psychiatre'} · <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;">${t.id}</span>${etags}${ptag}</div>
+        <div class="ttxt">${txt}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleEmo(e,checked){
+  if(checked)ivEmoFilters.add(e);else ivEmoFilters.delete(e);
+  renderTurns();
+  updateTimeline();
+}
+function togglePros(p,checked){
+  if(checked)ivProFilters.add(p);else ivProFilters.delete(p);
+  renderTurns();
+}
+
+function renderTimeline(ent){
+  updateTimeline();
+}
+
+function updateTimeline(){
+  if(!currentIV) return;
+  if(ivChart){ivChart.destroy();ivChart=null;}
+  const ent=currentIV;
+  const emos=[...new Set(ent.tours.flatMap(t=>t.emotions))]
+    .filter(e=>e!=='neutre' && ivEmoFilters.has(e));
+  const ds=emos.map(em=>({
+    label:em,
+    data:ent.tours.map(t=>t.emotions.includes(em)?1:null),
+    borderColor:ec(em),backgroundColor:ec(em)+'33',
+    pointRadius:6,pointHoverRadius:8,tension:.35,spanGaps:false,fill:false,borderWidth:2
+  })).filter(d=>d.data.some(x=>x!==null));
+  ivChart=new Chart(document.getElementById('ch-tl'),{
+    type:'line',data:{labels:ent.tours.map((t,i)=>`T${i+1}`),datasets:ds},
+    options:{responsive:true,maintainAspectRatio:false,
+      layout:{padding:{right:8}},
+      plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:'#F0EDE6'}},y:{display:false,min:0,max:1.5}}}
+  });
+}
+
+function exportInterview(){
+  if(!currentIV) return;
+  const h='ID_Tour,Locuteur,Texte,Emotions,Prosodie\n';
+  const rows=currentIV.tours.map(t=>`${t.id},${t.locuteur},"${t.texte.replace(/"/g,'""')}","${t.emotions.join(';')}","${t.prosodie.join(';')}"`).join('\n');
+  dl(h+rows,`${currentIV.id}_export.csv`);
+}
+
+function dl(content,filename){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type:'text/csv;charset=utf-8;'}));
+  a.download=filename;a.click();
+}
+
+// ══════════════════════════════════════════
+//  CLUSTERING — TF-IDF + K-MEANS + PCA 2D
+// ══════════════════════════════════════════
+
+const CLUSTER_COLORS=['#4E72D6','#C47A2E','#2E7D5F','#C4392E','#8B4A8B','#2E8B8B','#A07828','#6B4226'];
+
+// ── Stop words FR ──
+const SW=new Set('le la les de du des un une en et est je tu il elle nous vous ils elles me te se mon ma mes ton ta tes son sa ses notre votre leur leurs ce cet cette ces qui que quoi dont où à au aux par pour sur sous dans avec sans ou si ne pas plus très bien aussi mais donc or ni car quand comme même tout tous toute toutes ça c d l j n m s y qu avez avoir être fait peut doit dit faire oui non ah eh alors voilà vraiment encore depuis après avant pendant comment pourquoi parce jamais souvent peu trop assez déjà autre autres lui eux moi toi soi ici là fois chose quelque quelques plusieurs certain certains on a ai as sommes êtes sont était étaient va vais vas allons allez vont venir voir savoir peux pouvez peuvent dois devez doivent quel quelle quels quelles dont chaque suis suis était avais avait avaient ait eut avaient cela ceci rien quelqu eux-mêmes même moi-même toi-même lui-même nous-mêmes vous-mêmes leurs propres'.split(' '));
+
+function tokenize(text){
+  return text.toLowerCase()
+    .replace(/[''´`]/g,'')
+    .replace(/[^a-zàâäéèêëîïôùûüçœæ\s]/gi,' ')
+    .split(/\s+/)
+    .filter(w=>{
+      if(w.length<4) return false;
+      const norm=w.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+      return !SW.has(norm)&&!SW.has(w);
+    });
+}
+
+function buildTFIDF(docs){
+  const tokenized=docs.map(tokenize);
+  const vocabSet=new Set(tokenized.flat());
+  const vocab=[...vocabSet];
+  const vidx={};vocab.forEach((w,i)=>vidx[w]=i);
+  const m=vocab.length,n=docs.length;
+
+  // TF
+  const tf=tokenized.map(tokens=>{
+    const vec=new Float64Array(m);
+    const tot=tokens.length||1;
+    tokens.forEach(w=>{if(vidx[w]!==undefined)vec[vidx[w]]++;});
+    for(let j=0;j<m;j++)vec[j]/=tot;
+    return vec;
+  });
+
+  // IDF
+  const df=new Float64Array(m);
+  tf.forEach(vec=>{for(let j=0;j<m;j++)if(vec[j]>0)df[j]++;});
+  const idf=df.map(d=>d>0?Math.log((n+1)/(d+1))+1:0);
+
+  // TF-IDF + L2 norm
+  const matrix=tf.map(vec=>{
+    const v=new Float64Array(m);
+    let norm=0;
+    for(let j=0;j<m;j++){v[j]=vec[j]*idf[j];norm+=v[j]*v[j];}
+    norm=Math.sqrt(norm);
+    if(norm>0)for(let j=0;j<m;j++)v[j]/=norm;
+    return v;
+  });
+  return{matrix,vocab,idf};
+}
+
+function cosineDist(a,b){
+  let dot=0,na=0,nb=0;
+  for(let i=0;i<a.length;i++){dot+=a[i]*b[i];na+=a[i]*a[i];nb+=b[i]*b[i];}
+  const d=Math.sqrt(na)*Math.sqrt(nb);
+  return d<1e-12?1:1-dot/d;
+}
+
+function kmeans(X,k,maxIter=120){
+  const n=X.length,m=X[0].length;
+  if(k>=n)k=n-1;
+
+  // k-means++ init
+  const centroids=[];
+  const usedIdx=new Set();
+  const first=Math.floor(Math.random()*n);
+  centroids.push(Float64Array.from(X[first]));
+  usedIdx.add(first);
+  while(centroids.length<k){
+    const dists=X.map((x,i)=>{
+      if(usedIdx.has(i))return 0;
+      return Math.min(...centroids.map(c=>cosineDist(x,c)));
+    });
+    const total=dists.reduce((s,d)=>s+d,0);
+    let r=Math.random()*total,cum=0;
+    let chosen=0;
+    for(let i=0;i<n;i++){cum+=dists[i];if(cum>=r){chosen=i;break;}}
+    centroids.push(Float64Array.from(X[chosen]));
+    usedIdx.add(chosen);
+  }
+
+  let labels=new Int32Array(n);
+  for(let iter=0;iter<maxIter;iter++){
+    // assign
+    let changed=false;
+    for(let i=0;i<n;i++){
+      let best=0,bestD=Infinity;
+      for(let ci=0;ci<k;ci++){const d=cosineDist(X[i],centroids[ci]);if(d<bestD){bestD=d;best=ci;}}
+      if(labels[i]!==best){labels[i]=best;changed=true;}
+    }
+    if(!changed)break;
+    // update centroids
+    for(let ci=0;ci<k;ci++){
+      const members=[];
+      for(let i=0;i<n;i++)if(labels[i]===ci)members.push(X[i]);
+      if(!members.length)continue;
+      const c=new Float64Array(m);
+      members.forEach(x=>{for(let j=0;j<m;j++)c[j]+=x[j]/members.length;});
+      centroids[ci]=c;
+    }
+  }
+  // inertia (sum of cosine distances)
+  const inertia=labels.reduce((s,ci,i)=>s+cosineDist(X[i],centroids[ci]),0);
+  return{labels:Array.from(labels),centroids,inertia};
+}
+
+function bestKMeans(X,k,trials=5){
+  let best=null;
+  for(let t=0;t<trials;t++){
+    const res=kmeans(X,k);
+    if(!best||res.inertia<best.inertia)best=res;
+  }
+  return best;
+}
+
+function pca2d(X){
+  const n=X.length,m=X[0].length;
+  // center
+  const mean=new Float64Array(m);
+  X.forEach(row=>{for(let j=0;j<m;j++)mean[j]+=row[j]/n;});
+  const Xc=X.map(row=>{const v=new Float64Array(m);for(let j=0;j<m;j++)v[j]=row[j]-mean[j];return v;});
+
+  // gram matrix G = Xc Xc^T  (n×n)
+  const G=Array.from({length:n},(_,i)=>Array.from({length:n},(_,j)=>{
+    let s=0;for(let k=0;k<m;k++)s+=Xc[i][k]*Xc[j][k];return s;
+  }));
+
+  // power iteration for eigenvector
+  function powerIter(M,steps=100){
+    let v=Array.from({length:n},()=>Math.random()-.5);
+    for(let s=0;s<steps;s++){
+      const w=Array.from({length:n},(_,i)=>M[i].reduce((ss,x,j)=>ss+x*v[j],0));
+      const norm=Math.sqrt(w.reduce((ss,x)=>ss+x*x,0));
+      if(norm<1e-12)break;
+      v=w.map(x=>x/norm);
+    }
+    return v;
+  }
+
+  const v1=powerIter(G);
+  const lambda1=v1.reduce((s,x,i)=>s+x*G[i].reduce((ss,g,j)=>ss+g*v1[j],0),0);
+  // deflate
+  const G2=G.map((row,i)=>row.map((g,j)=>g-lambda1*v1[i]*v1[j]));
+  const v2=powerIter(G2);
+
+  // add tiny jitter to avoid collapsed points
+  return Xc.map((_,i)=>[v1[i]+(Math.random()-.5)*1e-5, v2[i]+(Math.random()-.5)*1e-5]);
+}
+
+function topTerms(centroid,vocab,n=7){
+  // centroid is Float64Array, vocab is string[]
+  const arr=Array.from(centroid).map((s,i)=>({t:vocab[i],s}));
+  arr.sort((a,b)=>b.s-a.s);
+  return arr.slice(0,n).map(x=>x.t).filter(t=>t&&t.length>0);
+}
+
+// ── Main render ──
+let clusChart=null;
+let clusComputed=false;
+let clusMatrix=null, clusLabels=null;
+
+function computeClustering(){
+  const btn=document.getElementById('clus-compute-btn');
+  btn.disabled=true;btn.textContent='Calcul…';
+  // defer to let browser repaint
+  setTimeout(()=>{
+    try{ _doClustering(); }finally{ btn.disabled=false;btn.textContent='Recalculer'; }
+  },30);
+}
+
+function _doClustering(){
+  const k=parseInt(document.getElementById('k-slider').value);
+  const n=CORPUS.length;
+
+  // Build one document per interview (all turns concatenated)
+  const docs=CORPUS.map(e=>e.tours.map(t=>t.texte).join(' '));
+
+  const{matrix,vocab}=buildTFIDF(docs);
+  const{labels,centroids}=bestKMeans(matrix,Math.min(k,n-1));
+  const coords=pca2d(matrix);
+  clusMatrix=matrix; clusLabels=labels;
+
+  // ── Scatter chart ──
+  if(clusChart){clusChart.destroy();clusChart=null;}
+  document.getElementById('clus-empty').style.display='none';
+  document.getElementById('ch-clus').style.display='block';
+
+  // Group by cluster
+  const byCluster=Array.from({length:k},(_,ci)=>
+    CORPUS.map((e,i)=>({e,i,x:coords[i][0],y:coords[i][1]})).filter(p=>labels[p.i]===ci)
+  );
+
+  const datasets=byCluster.map((pts,ci)=>({
+    label:`Cluster ${ci+1}`,
+    data:pts.map(p=>({x:p.x,y:p.y,corpusIdx:p.i})),
+    backgroundColor:CLUSTER_COLORS[ci%CLUSTER_COLORS.length]+'CC',
+    borderColor:CLUSTER_COLORS[ci%CLUSTER_COLORS.length],
+    borderWidth:2,
+    pointRadius:11,
+    pointHoverRadius:14,
+  }));
+
+  clusChart=new Chart(document.getElementById('ch-clus'),{
+    type:'scatter',
+    data:{datasets},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'top',labels:{font:{size:11},padding:10,usePointStyle:true,boxWidth:10}},
+        tooltip:{callbacks:{
+          title:items=>{
+            const pt=items[0];
+            const idx=datasets[pt.datasetIndex].data[pt.dataIndex].corpusIdx;
+            return CORPUS[idx].id+' — '+CORPUS[idx].patient;
+          },
+          label:items=>{
+            const idx=datasets[items.datasetIndex].data[items.dataIndex].corpusIdx;
+            const e=CORPUS[idx];
+            return [`Groupe ${e.groupe} — ${gname(e.groupe)}`,`${e.diagnostic}`,`Score PANSS : ${e.score_clinique}`];
+          }
+        }}
+      },
+      scales:{
+        x:{display:false,grid:{display:false}},
+        y:{display:false,grid:{display:false}}
+      },
+      onClick:(evt,elements)=>{
+        if(!elements.length)return;
+        const el=elements[0];
+        const idx=datasets[el.datasetIndex].data[el.dataIndex].corpusIdx;
+        navigate('interview',{id:CORPUS[idx].id});
+      },
+      onHover:(evt,elements)=>{
+        evt.native.target.style.cursor=elements.length?'pointer':'default';
+      }
+    }
+  });
+
+  // ── Cluster cards ──
+  const cards=document.getElementById('clus-cards');
+  cards.innerHTML=byCluster.map((pts,ci)=>{
+    const terms=topTerms(centroids[ci],vocab,7);
+    const entRows=pts.map(p=>`<div class="cent" onclick="navigate('interview',{id:'${p.e.id}'})">${p.e.id} <span style="font-size:10px;color:var(--t3);">${p.e.patient} · Gr.${p.e.groupe}</span></div>`).join('');
+    const termBadges=terms.map(t=>`<span class="cterm">${t}</span>`).join('');
+    return `<div class="ccard">
+      <div class="ccard-hd">
+        <span class="ccard-dot" style="background:${CLUSTER_COLORS[ci%CLUSTER_COLORS.length]}"></span>
+        <span class="ccard-title">Cluster ${ci+1}</span>
+        <span class="ccard-n">${pts.length} entretien${pts.length>1?'s':''}</span>
+      </div>
+      <div class="ccard-terms">${termBadges||'<span style="font-size:11px;color:var(--t3)">—</span>'}</div>
+      <div class="ccard-ents">${entRows}</div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+//  SIMILAR INTERVIEWS
+// ══════════════════════════════════════════
+function renderSimilarInterviews(id){
+  const panel=document.getElementById('similar-panel');
+  const list=document.getElementById('similar-list');
+  if(!clusMatrix){panel.style.display='none';return;}
+  const idx=CORPUS.findIndex(e=>e.id===id);
+  if(idx<0){panel.style.display='none';return;}
+  const scored=CORPUS
+    .map((e,i)=>({e,i,sim:1-cosineDist(clusMatrix[idx],clusMatrix[i])}))
+    .filter((_,i)=>i!==idx)
+    .sort((a,b)=>b.sim-a.sim)
+    .slice(0,3);
+  list.innerHTML=scored.map(({e,sim})=>{
+    const pct=Math.round(sim*100);
+    const bar=`<div style="margin-top:3px;height:3px;border-radius:2px;background:var(--bd);"><div style="width:${pct}%;height:100%;border-radius:2px;background:var(--acc);"></div></div>`;
+    return `<div onclick="navigate('interview',{id:'${e.id}'})" style="cursor:pointer;padding:7px 8px;margin-bottom:6px;border-radius:7px;border:1px solid var(--bd);background:var(--bg);">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-weight:600;font-size:12px;">${e.id}</span>
+        <span style="font-size:10px;color:var(--t3);">${pct}%</span>
+      </div>
+      <div style="font-size:10px;color:var(--t2);margin-top:2px;">${e.patient} · Gr.${e.groupe}</div>
+      ${bar}
+    </div>`;
+  }).join('');
+  panel.style.display='';
+}
+
+// ══════════════════════════════════════════
+//  SIDEBAR TOGGLE
+// ══════════════════════════════════════════
+function toggleSidebar(){
+  const sb=document.getElementById('sb');
+  sb.classList.toggle('collapsed');
+  // Resize charts after transition so they redraw at correct size
+  setTimeout(()=>{
+    Object.values(dbCharts).forEach(c=>c?.resize?.());
+    if(ivChart) ivChart.resize();
+  }, 240);
+}
+
+// ══════════════════════════════════════════
+//  RESET ALL — triggered by logo click
+// ══════════════════════════════════════════
+function resetAll(){
+  // Reset exploration filters
+  ['f-ga','f-gn','f-gp','f-gc'].forEach(id=>{const el=document.getElementById(id);if(el)el.checked=true;});
+  const resets=['f-emo','f-pros','f-age','f-sexe'];
+  resets.forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const qi=document.getElementById('q');if(qi)qi.value='';
+  const sorti=document.getElementById('sort-sel');
+  if(sorti) sorti.value='date';
+  // Reset interview state
+  currentIV=null;
+  ivEmoFilters=new Set();
+  ivProFilters=new Set();
+  ivSpeakerFilters=new Set(['patient','psychiatre']);
+  // Navigate to annotation
+  navigate('annotation');
+}
+
+// ══════════════════════════════════════════
+//  BOOT
+// ══════════════════════════════════════════
+// ══════════════════════════════════════════
+//  BOOT
+// ══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded',()=>{
+  initCounts();
+  try{renderDashboard();}catch(e){console.warn('Dashboard init:',e);}
+  applyFilters();
+  try{computeClustering();}catch(e){}
+  plutInit();
+  navigate('annotation');
+});
+// ══════════════════════════════════════════
+//  ROUE DE PLUTCHIK — 3 anneaux d'intensité
+// ══════════════════════════════════════════
+(function(){
+  const BG='#f7f5f0';
+  // Géométrie roue primaire
+  const PCX=140,PCY=140;
+  const R1=38,R2=72,R3=106,PLR=122;
+  // Géométrie roues dyades
+  const DCX=130,DCY=130,DMR=98,DLR=117;
+
+  const NS='http://www.w3.org/2000/svg';
+  const mk=(t,a,x)=>{const e=document.createElementNS(NS,t);Object.entries(a).forEach(([k,v])=>e.setAttribute(k,v));if(x!==undefined)e.textContent=x;return e;};
+  const ff=n=>n.toFixed(1);
+
+  function parseHex(h){return[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];}
+  function lighten(h,fac=0.50){const[r,g,b]=parseHex(h);return`rgb(${Math.round(r+(255-r)*fac)},${Math.round(g+(255-g)*fac)},${Math.round(b+(255-b)*fac)})`;}
+  function darken(h,fac=0.30){const[r,g,b]=parseHex(h);return`rgb(${Math.round(r*(1-fac))},${Math.round(g*(1-fac))},${Math.round(b*(1-fac))})`;}
+  function blend(c1,c2){const[r1,g1,b1]=parseHex(c1),[r2,g2,b2]=parseHex(c2);return`rgb(${Math.round((r1+r2)/2)},${Math.round((g1+g2)/2)},${Math.round((b1+b2)/2)})`;}
+
+  const PLUT_EMO=[
+    {n:'joy',         lb:'Joie',         a:-90, c:'#F9CF47', s:0.60, sub:['Sérénité','Joie','Extase']},
+    {n:'trust',       lb:'Confiance',    a:-45, c:'#8BC34A', s:0.40, sub:['Acceptation','Confiance','Admiration']},
+    {n:'fear',        lb:'Peur',         a:0,   c:'#3B9E5B', s:0.10, sub:['Appréhension','Peur','Terreur']},
+    {n:'surprise',    lb:'Surprise',     a:45,  c:'#24BAA4', s:0.70, sub:['Distraction','Surprise','Étonnement']},
+    {n:'sadness',     lb:'Tristesse',    a:90,  c:'#2F7FBA', s:0.10, sub:['Pensivité','Tristesse','Chagrin']},
+    {n:'disgust',     lb:'Dégoût',       a:135, c:'#8B5EA9', s:0.50, sub:['Ennui','Dégoût','Répulsion']},
+    {n:'anger',       lb:'Colère',       a:180, c:'#C94444', s:0.40, sub:['Contrariété','Colère','Rage']},
+    {n:'anticipation',lb:'Anticipation', a:225, c:'#E87C35', s:0.60, sub:['Intérêt','Anticipation','Vigilance']},
+  ];
+
+  const PLUT_DYADS=[
+    [{lb:'Amour',        src:'Joie + Confiance',        e1:0,e2:1,a:-67.5},{lb:'Soumission',    src:'Confiance + Peur',        e1:1,e2:2,a:-22.5},
+     {lb:'Alarme',       src:'Peur + Surprise',          e1:2,e2:3,a:22.5 },{lb:'Déception',     src:'Surprise + Tristesse',    e1:3,e2:4,a:67.5 },
+     {lb:'Remords',      src:'Tristesse + Dégoût',       e1:4,e2:5,a:112.5},{lb:'Mépris',        src:'Dégoût + Colère',         e1:5,e2:6,a:157.5},
+     {lb:'Agressivité',  src:'Colère + Anticipation',    e1:6,e2:7,a:202.5},{lb:'Optimisme',     src:'Anticipation + Joie',     e1:7,e2:0,a:247.5}],
+    [{lb:'Culpabilité',  src:'Joie + Peur',              e1:0,e2:2,a:-45  },{lb:'Curiosité',     src:'Confiance + Surprise',    e1:1,e2:3,a:0    },
+     {lb:'Désespoir',    src:'Peur + Tristesse',          e1:2,e2:4,a:45   },{lb:'Incrédulité',   src:'Surprise + Dégoût',       e1:3,e2:5,a:90   },
+     {lb:'Envie',        src:'Tristesse + Colère',        e1:4,e2:6,a:135  },{lb:'Cynisme',       src:'Dégoût + Anticipation',   e1:5,e2:7,a:180  },
+     {lb:'Fierté',       src:'Colère + Joie',             e1:6,e2:0,a:225  },{lb:'Espoir',        src:'Anticipation + Confiance',e1:7,e2:1,a:270  }],
+    [{lb:'Enchantement', src:'Joie + Surprise',           e1:0,e2:3,a:-22.5},{lb:'Sentimentalité',src:'Confiance + Tristesse',   e1:1,e2:4,a:22.5 },
+     {lb:'Honte',        src:'Peur + Dégoût',             e1:2,e2:5,a:67.5 },{lb:'Indignation',   src:'Surprise + Colère',       e1:3,e2:6,a:112.5},
+     {lb:'Pessimisme',   src:'Tristesse + Anticipation',  e1:4,e2:7,a:157.5},{lb:'Morbidité',     src:'Dégoût + Joie',           e1:5,e2:0,a:202.5},
+     {lb:'Dominance',    src:'Colère + Confiance',        e1:6,e2:1,a:247.5},{lb:'Anxiété',       src:'Anticipation + Peur',     e1:7,e2:2,a:292.5}],
+    [{lb:'Douceur amère',src:'Joie + Tristesse',          e1:0,e2:4,a:0    },{lb:'Ambivalence',   src:'Confiance + Dégoût',      e1:1,e2:5,a:90   },
+     {lb:'Sidération',   src:'Peur + Colère',              e1:2,e2:6,a:180  },{lb:'Confusion',     src:'Surprise + Anticipation', e1:3,e2:7,a:270  }],
+  ];
+  const PLUT_HALFS=[22,22,22,22,38];
+
+  function plutGetDyads(idx){
+    return PLUT_DYADS[idx-1].map(d=>({...d,c:blend(PLUT_EMO[d.e1].c,PLUT_EMO[d.e2].c),s:parseFloat(Math.sqrt(PLUT_EMO[d.e1].s*PLUT_EMO[d.e2].s).toFixed(3))}));
+  }
+
+  // Dessin d'un secteur annulaire (rOuter > rInner)
+  function drawAnnularSector(svg,cx,cy,rO,rI,angle,halfDeg,color){
+    if(rO<=rI+0.5)return;
+    const H=halfDeg*Math.PI/180,rad=angle*Math.PI/180;
+    const c1=Math.cos(rad-H),s1=Math.sin(rad-H),c2=Math.cos(rad+H),s2=Math.sin(rad+H);
+    const ox1=ff(cx+rO*c1),oy1=ff(cy+rO*s1),ox2=ff(cx+rO*c2),oy2=ff(cy+rO*s2);
+    const ix1=ff(cx+rI*c1),iy1=ff(cy+rI*s1),ix2=ff(cx+rI*c2),iy2=ff(cy+rI*s2);
+    svg.appendChild(mk('path',{d:`M${ix1},${iy1} L${ox1},${oy1} A${ff(rO)},${ff(rO)} 0 0,1 ${ox2},${oy2} L${ix2},${iy2} A${ff(rI)},${ff(rI)} 0 0,0 ${ix1},${iy1}Z`,fill:color,stroke:BG,'stroke-width':'1.2'}));
+  }
+
+  // Roue primaire — 3 anneaux fixes, remplissage depuis le centre
+  function plutDrawPrimary(){
+    const svg=document.getElementById('plut-svg0');
+    if(!svg)return;
+    svg.innerHTML='';
+    // Fonds grisés
+    PLUT_EMO.forEach(em=>{
+      [[0,R1],[R1,R2],[R2,R3]].forEach(([ri,ro])=>drawAnnularSector(svg,PCX,PCY,ro,ri,em.a,22,lighten(em.c,0.82)));
+    });
+    // Séparateurs d'anneaux
+    [R1,R2,R3].forEach(r=>svg.appendChild(mk('circle',{cx:PCX,cy:PCY,r,fill:'none',stroke:BG,'stroke-width':'1.5'})));
+    // Remplissage selon score
+    PLUT_EMO.forEach(em=>{
+      const filled=em.s*R3;
+      if(filled>0&&filled<=R1)         drawAnnularSector(svg,PCX,PCY,filled,0,em.a,22,lighten(em.c,0.42));
+      else if(filled>R1&&filled<=R2){  drawAnnularSector(svg,PCX,PCY,R1,0,em.a,22,lighten(em.c,0.42));drawAnnularSector(svg,PCX,PCY,filled,R1,em.a,22,em.c);}
+      else if(filled>R2){              drawAnnularSector(svg,PCX,PCY,R1,0,em.a,22,lighten(em.c,0.42));drawAnnularSector(svg,PCX,PCY,R2,R1,em.a,22,em.c);drawAnnularSector(svg,PCX,PCY,filled,R2,em.a,22,darken(em.c,0.28));}
+    });
+    // Séparateurs re-dessinés par-dessus
+    [R1,R2,R3].forEach(r=>svg.appendChild(mk('circle',{cx:PCX,cy:PCY,r,fill:'none',stroke:BG,'stroke-width':'1.5'})));
+    svg.appendChild(mk('circle',{cx:PCX,cy:PCY,r:8,fill:BG,stroke:'#ddd','stroke-width':'0.5'}));
+    PLUT_EMO.forEach(em=>{
+      const r=em.a*Math.PI/180;
+      svg.appendChild(mk('text',{x:ff(PCX+PLR*Math.cos(r)),y:ff(PCY+PLR*Math.sin(r)),'text-anchor':'middle','dominant-baseline':'middle','font-size':'8.5','font-family':'IBM Plex Sans,sans-serif',fill:'#555'},em.lb));
+    });
+  }
+
+  // Roues dyades
+  function plutDrawDyadWheel(svgId,items,halfDeg){
+    const svg=document.getElementById(svgId);
+    if(!svg)return;
+    svg.innerHTML='';
+    const H=halfDeg*Math.PI/180;
+    [0.25,0.5,0.75,1].forEach(r=>svg.appendChild(mk('circle',{cx:DCX,cy:DCY,r:r*DMR,fill:'none',stroke:'rgba(0,0,0,0.07)','stroke-width':'0.5'})));
+    items.forEach(it=>{
+      const r=it.a*Math.PI/180,d=it.s*DMR;
+      if(d<1)return;
+      const x1=ff(DCX+d*Math.cos(r-H)),y1=ff(DCY+d*Math.sin(r-H));
+      const x2=ff(DCX+d*Math.cos(r+H)),y2=ff(DCY+d*Math.sin(r+H));
+      svg.appendChild(mk('path',{d:`M${DCX},${DCY} L${x1},${y1} A${ff(d)},${ff(d)} 0 0,1 ${x2},${y2}Z`,fill:it.c,opacity:'0.88',stroke:BG,'stroke-width':'1.5'}));
+    });
+    svg.appendChild(mk('circle',{cx:DCX,cy:DCY,r:8,fill:BG,stroke:'#ddd','stroke-width':'0.5'}));
+    items.forEach(it=>{
+      const r=it.a*Math.PI/180;
+      svg.appendChild(mk('text',{x:ff(DCX+DLR*Math.cos(r)),y:ff(DCY+DLR*Math.sin(r)),'text-anchor':'middle','dominant-baseline':'middle','font-size':'8','font-family':'IBM Plex Sans,sans-serif',fill:'#666'},it.lb));
+    });
+  }
+
+  function plutInitDyadPanel(panelId,dyads){
+    const panel=document.getElementById(panelId);if(!panel)return;
+    panel.innerHTML='<p class="plut-formula-note">Score = √(é1 × é2)</p>';
+    dyads.forEach(d=>{
+      const row=document.createElement('div');row.className='plut-dy-row';
+      const dot=document.createElement('span');dot.className='plut-dot';dot.style.background=d.c;
+      const lbl=document.createElement('span');lbl.className='plut-dy-lbl';lbl.textContent=d.lb;
+      const src=document.createElement('span');src.className='plut-dy-src';src.textContent=d.src;
+      const bw=document.createElement('div');bw.className='plut-dy-bar-wrap';
+      const bf=document.createElement('div');bf.className='plut-dy-bar';
+      bf.id='plut-bar-'+panelId+d.lb.replace(/\s/g,'');bf.style.width=(d.s*100).toFixed(1)+'%';bf.style.background=d.c;
+      bw.appendChild(bf);
+      const val=document.createElement('span');val.className='plut-dy-val';
+      val.id='plut-val-'+panelId+d.lb.replace(/\s/g,'');val.textContent=d.s.toFixed(2);
+      row.append(dot,lbl,src,bw,val);panel.appendChild(row);
+    });
+  }
+
+  function plutUpdateDyadPanel(panelId,dyads){
+    dyads.forEach(d=>{
+      const k=panelId+d.lb.replace(/\s/g,'');
+      const bar=document.getElementById('plut-bar-'+k),val=document.getElementById('plut-val-'+k);
+      if(bar)bar.style.width=(d.s*100).toFixed(1)+'%';
+      if(val)val.textContent=d.s.toFixed(2);
+    });
+  }
+
+  window.plutRenderAll=function(){
+    plutDrawPrimary();
+    for(let i=1;i<=4;i++){const d=plutGetDyads(i);plutDrawDyadWheel('plut-svg'+i,d,PLUT_HALFS[i]);plutUpdateDyadPanel('plut-panel'+i,d);}
+  };
+
+  function plutApplyScores(vals){
+    PLUT_EMO.forEach((em,i)=>{
+      em.s=parseFloat(vals[i].toFixed(2));
+      const sl=document.getElementById('plut-sl-'+em.n);
+      const vl=document.getElementById('plut-vl-'+em.n);
+      if(sl)sl.value=em.s;
+      if(vl)vl.textContent=em.s.toFixed(2);
+    });
+    plutRenderAll();
+  }
+
+  window.plutInit=function(){
+    // Sliders 3 tiers
+    const grid=document.getElementById('plut-sliders');
+    if(!grid)return;
+    grid.innerHTML='';
+    PLUT_EMO.forEach((em,i)=>{
+      const block=document.createElement('div');block.className='plut-emo-block';
+      const header=document.createElement('div');header.className='plut-emo-header';
+      const dot=document.createElement('span');dot.className='plut-dot';dot.style.background=em.c;
+      const name=document.createElement('span');name.className='plut-emo-name';name.textContent=em.lb;
+      const valEl=document.createElement('span');valEl.className='plut-emo-val';valEl.id='plut-vl-'+em.n;valEl.textContent=em.s.toFixed(2);
+      header.append(dot,name,valEl);block.appendChild(header);
+
+      const wrap=document.createElement('div');wrap.className='plut-slider-wrap';
+      const trackBg=document.createElement('div');trackBg.className='plut-track-bg';
+      [lighten(em.c,0.42),em.c,darken(em.c,0.28)].forEach(c=>{const t=document.createElement('div');t.className='plut-tier';t.style.background=c;trackBg.appendChild(t);});
+      const sl=document.createElement('input');
+      sl.type='range';sl.min=0;sl.max=1;sl.step=0.01;sl.value=em.s;
+      sl.className='plut-emo-sl';sl.id='plut-sl-'+em.n;
+      sl.addEventListener('input',()=>{PLUT_EMO[i].s=parseFloat(sl.value);valEl.textContent=PLUT_EMO[i].s.toFixed(2);plutRenderAll();});
+      wrap.append(trackBg,sl);block.appendChild(wrap);
+
+      const tierLbls=document.createElement('div');tierLbls.className='plut-tier-labels';
+      em.sub.forEach(s=>{const sp=document.createElement('span');sp.textContent=s;tierLbls.appendChild(sp);});
+      block.appendChild(tierLbls);
+      grid.appendChild(block);
+    });
+
+    // Dyad panels
+    for(let i=1;i<=4;i++)plutInitDyadPanel('plut-panel'+i,plutGetDyads(i));
+
+    // Presets
+    const parea=document.getElementById('plut-parea');
+    if(!parea)return;
+    parea.innerHTML='';
+    const makeP=idx=>PLUT_EMO.map((_,i)=>i===idx?0.80:0.05);
+    const presets=[
+      {lb:'Joie',v:makeP(0)},{lb:'Confiance',v:makeP(1)},{lb:'Peur',v:makeP(2)},{lb:'Surprise',v:makeP(3)},
+      {lb:'Tristesse',v:makeP(4)},{lb:'Dégoût',v:makeP(5)},{lb:'Colère',v:makeP(6)},{lb:'Anticipation',v:makeP(7)},
+      {lb:'Aléatoire',v:null},
+    ];
+    presets.forEach(p=>{
+      const btn=document.createElement('button');btn.textContent=p.lb;
+      btn.addEventListener('click',()=>{
+        const v=p.v||PLUT_EMO.map(()=>parseFloat(Math.random().toFixed(2)));
+        plutApplyScores(v);
+      });
+      parea.appendChild(btn);
+    });
+
+    // Import JSON
+    const INT_MAP={'faible':1/6,'moyenne':0.50,'forte':5/6};
+    const FR_TO_N={'joie':0,'confiance':1,'peur':2,'surprise':3,'tristesse':4,'dégoût':5,'degout':5,'colère':6,'colere':6,'anticipation':7};
+
+    function extractEmo(entry){
+      const candidates=[entry,entry.emotions,entry.annotation,entry.labels].filter(Boolean);
+      for(const obj of candidates){
+        if(typeof obj!=='object'||Array.isArray(obj))continue;
+        const found={};
+        for(const[k,v]of Object.entries(obj)){const key=k.toLowerCase().trim();if(FR_TO_N[key]!==undefined&&INT_MAP[v]!==undefined)found[FR_TO_N[key]]=INT_MAP[v];}
+        if(Object.keys(found).length>0)return found;
+      }
+      return null;
+    }
+
+    function parseCorpus(data){
+      const entries=Array.isArray(data)?data:Object.values(data);
+      const totals=new Array(8).fill(0),counts=new Array(8).fill(0);let n=0;
+      for(const entry of entries){const em=extractEmo(entry);if(!em)continue;n++;for(const[idx,val]of Object.entries(em)){totals[idx]+=val;counts[idx]++;}}
+      if(n===0)return null;
+      return{scores:totals.map((t,i)=>counts[i]>0?parseFloat((t/counts[i]).toFixed(3)):0),n};
+    }
+
+    const fileInput=document.getElementById('plut-json-import');
+    if(fileInput){
+      fileInput.addEventListener('change',function(e){
+        const file=e.target.files[0];if(!file)return;
+        const status=document.getElementById('plut-import-status');
+        status.textContent='Chargement…';status.style.color='#888';
+        const reader=new FileReader();
+        reader.onload=function(ev){
+          try{
+            const data=JSON.parse(ev.target.result);
+            const result=parseCorpus(data);
+            if(!result){status.textContent='❌ Aucune émotion reconnue — vérifie les clés et valeurs (faible/moyenne/forte).';status.style.color='#c00';return;}
+            plutApplyScores(result.scores);
+            status.textContent=`✓ ${result.n} entrée(s) chargée(s).`;status.style.color='#2a7a2a';
+          }catch{status.textContent='❌ Fichier JSON invalide.';status.style.color='#c00';}
+        };
+        reader.readAsText(file);
+      });
+    }
+
+    plutRenderAll();
+  };
+})();
+
+// ══════════════════════════════════════════
+//  LLM MODAL
+// ══════════════════════════════════════════
+function openLLM(){
+  const modal=document.getElementById('llm-modal');
+  const n=filteredCorpus.length;
+  document.getElementById('llm-ctx').textContent=`${n} entretien(s) dans le contexte`;
+  modal.classList.add('open');
+  document.addEventListener('keydown',_llmEsc);
+}
+function closeLLM(){
+  document.getElementById('llm-modal').classList.remove('open');
+  document.removeEventListener('keydown',_llmEsc);
+}
+function _llmEsc(e){if(e.key==='Escape')closeLLM();}
+
+async function sendLLM(){
+  const prompt=document.getElementById('llm-input').value.trim();
+  if(!prompt) return;
+  const ep=document.getElementById('llm-ep').value.trim()||'http://localhost:11434/api/generate';
+  const model=document.getElementById('llm-model').value.trim()||'mistral';
+  const dot=document.getElementById('llm-dot');
+  const resp=document.getElementById('llm-response');
+  const btn=document.getElementById('llm-send');
+
+  // Build corpus context (capped at 20 interviews to avoid overflow)
+  const ctx=filteredCorpus.slice(0,20).map(e=>{
+    const emos=[...new Set(e.tours.flatMap(t=>t.emotions))].join(', ')||'—';
+    return `[${e.id}] ${e.diagnostic} · groupe ${e.groupe} · ${e.age}a ${e.sexe} · ${e.duree}min · émotions: ${emos}`;
+  }).join('\n');
+
+  const full=`Tu es un assistant d'analyse de corpus d'entretiens psychiatriques.\nContexte du corpus filtré (${filteredCorpus.length} entretien(s)) :\n${ctx}\n\nQuestion : ${prompt}`;
+
+  dot.className='llm-dot loading';
+  btn.disabled=true;
+  resp.className='llm-response visible';
+  resp.textContent='…';
+
+  try{
+    const res=await fetch(ep,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model,prompt:full,stream:false})
+    });
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data=await res.json();
+    // Ollama: data.response — OpenAI-compat: data.choices[0].message.content
+    const answer=data.response||data.choices?.[0]?.message?.content||JSON.stringify(data);
+    resp.textContent=answer;
+    dot.className='llm-dot ok';
+  }catch(err){
+    resp.textContent=`⚠ Erreur de connexion : ${err.message}\n\nVérifiez que le modèle est lancé et que l'endpoint est correct.`;
+    dot.className='llm-dot err';
+  }finally{
+    btn.disabled=false;
+  }
+}
+
+// ── Footer clock + stat ──
+function updateFooter(){
+  const stat=document.getElementById('foot-stat');
+  if(stat){
+    const pats=new Set(filteredCorpus.map(e=>e.patient)).size;
+    stat.innerHTML=`<strong>${pats}</strong> patient(s) · <strong>${filteredCorpus.length}</strong> entretien(s)`;
+  }
+  const t=document.getElementById('foot-time');
+  if(t){const n=new Date();t.textContent=`${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}:${String(n.getSeconds()).padStart(2,'0')}`;}
+}
+setInterval(updateFooter,1000);
+updateFooter();
+
+// ══════════════════════════════════════════
+//  ANNOTATION MANUELLE
+// ══════════════════════════════════════════
+
+const ANN_EMO = [
+  { id:'joie',        label:'Joie',         color:'#E6A817' },
+  { id:'tristesse',   label:'Tristesse',    color:'#4E72D6' },
+  { id:'peur',        label:'Peur',         color:'#7B5EA7' },
+  { id:'colere',      label:'Colère',       color:'#C0392B' },
+  { id:'surprise',    label:'Surprise',     color:'#16A085' },
+  { id:'anticipation',label:'Anticipation', color:'#D35400' },
+  { id:'confiance',   label:'Confiance',    color:'#27AE60' },
+  { id:'degout',      label:'Dégoût',       color:'#7F8C8D' },
+];
+const ANN_POL = ['Normale','Positive','Négative','Indéterminée'];
+const ANN_INT = ['Normale','Faible','Forte','Indéterminée'];
+const ANN_MOD = ['Négation','Incertitude / Conditionnel','Ironie / Sarcasme'];
+const ANN_ROLE_OPTS = [
+  { value:'Locuteur',        label:'Loc.'       },
+  { value:'Interlocuteur',   label:'Interloc.'  },
+  { value:'Tiers mentionné', label:'Tiers'      },
+  { value:'Indéterminé',     label:'Indéterminé'},
+];
+const ANN_ROLES = [
+  { id:'experient', label:'Expérient', title:"Qui ressent l'émotion" },
+  { id:'source',    label:'Source',    title:"Qui exprime ou rapporte cette émotion" },
+  { id:"cible",     label:"Cible",     title:"Vers qui / quoi l'émotion est dirigée" },
+];
+
+let annTurns = [];
+
+// ── Persistence localStorage ──
+function annSaveState() {
+  try {
+    localStorage.setItem('ariane_ann_turns', JSON.stringify(annTurns));
+    localStorage.setItem('ariane_ann_raw', document.getElementById('ann-raw-input')?.value || '');
+  } catch(e) {}
+}
+
+function annRestoreState() {
+  try {
+    const raw = localStorage.getItem('ariane_ann_raw');
+    const turns = localStorage.getItem('ariane_ann_turns');
+    if (raw && turns) {
+      const parsed = JSON.parse(turns);
+      if (parsed && parsed.length > 0) {
+        annTurns = parsed;
+        const rawInput = document.getElementById('ann-raw-input');
+        if (rawInput) rawInput.value = raw;
+        const patCount = parsed.filter(t=>t.speaker==='patient').length;
+        document.getElementById('ann-load-status').textContent = `✓ Session restaurée — ${parsed.length} tours (${patCount} patient)`;
+        document.getElementById('ann-import-zone').style.display = 'none';
+        document.getElementById('ann-workspace').style.display = 'block';
+        document.getElementById('ann-turn-counter').textContent =
+          `${parsed.length} tours · ${patCount} patient · ${parsed.length-patCount} psychiatre`;
+        annRenderTurns();
+        annSetupMouseSelection();
+        const fab = document.getElementById('ann-export-fab');
+        if (fab) fab.classList.add('visible');
+      }
+    }
+  } catch(e) {}
+}
+
+// Avertir si rechargement avec annotations en cours
+window.addEventListener('beforeunload', e => {
+  if (annTurns.some(t => t.annotations.length > 0 || t.noEmotion)) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
+// Autosave toutes les 10 secondes si des annotations existent
+setInterval(() => {
+  if (annTurns.length > 0) annSaveState();
+}, 10000);
+
+// Restaurer au chargement
+window.addEventListener('DOMContentLoaded', () => setTimeout(annRestoreState, 100));
+let annPanelState = { turnIdx: null, wordIndices: [], emotions: [], emotions2: [], emotionLibre: '', emotionLitterale: null, emotionInferee: null, polarite: null, intensite: null, modificateurs: [], experient: null, cible: null, source: null, comment: '', pendingGroupId: null, editingIndex: null };
+let annCurrentSelection = { turnIdx: null };
+let annAnnotationMode = 'litterale'; // actif par défaut
+
+// ── Chargement ──
+
+function annSetAnnotationMode(mode) {
+  if (mode !== '__sync__') {
+    annAnnotationMode = (annAnnotationMode === mode) ? null : mode;
+  }
+
+  const btnLit = document.getElementById('ann-mode-litterale');
+  const btnInf = document.getElementById('ann-mode-inferee');
+
+  const styleBtn = (btn, label, active) => {
+    if (!btn) return;
+    btn.style.background  = active ? 'var(--acc)' : 'var(--bg)';
+    btn.style.borderColor = active ? 'var(--acc)' : 'var(--bd)';
+    btn.style.color       = active ? '#fff'        : 'var(--t2)';
+    btn.style.fontWeight  = active ? '500'          : '';
+    btn.textContent       = label + (active ? ' ●' : ' ○');
+  };
+
+  styleBtn(btnLit, 'Littérale', annAnnotationMode === 'litterale');
+  styleBtn(btnInf, 'Inférée',   annAnnotationMode === 'inferee');
+
+  // Mettre à jour le panneau si déjà ouvert
+  if (annPanelState.turnIdx !== null) {
+    annPanelState.emotionLitterale = annAnnotationMode === 'litterale' ? 'Oui' : null;
+    annPanelState.emotionInferee   = annAnnotationMode === 'inferee'   ? 'Oui' : null;
+  }
+}
+
+function annLoad() {
+  const raw = document.getElementById('ann-raw-input').value.trim();
+  if (!raw) { document.getElementById('ann-load-status').textContent = '⚠ Texte vide.'; return; }
+  annParse(raw);
+}
+
+function annLoadFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('ann-raw-input').value = e.target.result;
+    annParse(e.target.result.trim());
+  };
+  reader.readAsText(file);
+}
+
+function annParse(raw) {
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  annTurns = [];
+  let patientCount = 0;
+  for (const line of lines) {
+    let speaker = null, text = '';
+    if (/^PATIENT\s*:/i.test(line)) {
+      speaker = 'patient'; text = line.replace(/^PATIENT\s*:\s*/i,'').trim(); patientCount++;
+    } else if (/^PSYCHIATRE\s*:/i.test(line)) {
+      speaker = 'psychiatre'; text = line.replace(/^PSYCHIATRE\s*:\s*/i,'').trim();
+    } else continue;
+    annTurns.push({ speaker, text, noEmotion: false, annotations: [] });
+  }
+  if (!annTurns.length) {
+    document.getElementById('ann-load-status').textContent = '⚠ Aucun tour reconnu. Vérifiez le format.'; return;
+  }
+  document.getElementById('ann-load-status').textContent = `✓ ${annTurns.length} tours chargés (${patientCount} patient)`;
+  document.getElementById('ann-import-zone').style.display = 'none';
+  document.getElementById('ann-workspace').style.display = 'block';
+  document.getElementById('ann-turn-counter').textContent =
+    `${annTurns.length} tours · ${patientCount} patient · ${annTurns.length-patientCount} psychiatre`;
+  annRenderTurns();
+  annSetupMouseSelection();
+  const fab = document.getElementById('ann-export-fab');
+  if (fab) fab.classList.add('visible');
+  annSaveState();
+}
+
+// ── Rendu des tours ──
+
+function annRenderTurns() {
+  const container = document.getElementById('ann-turns');
+  container.innerHTML = '';
+  annTurns.forEach((turn, ti) => {
+    const div = document.createElement('div');
+    div.className = `ann-turn ann-${turn.speaker}`;
+    div.dataset.turn = ti;
+
+    const spk = document.createElement('div');
+    spk.className = `ann-spk ann-${turn.speaker}`;
+    spk.textContent = turn.speaker === 'patient' ? '● Patient' : '● Psychiatre';
+    div.appendChild(spk);
+
+    const textDiv = document.createElement('div');
+    textDiv.className = 'ann-text';
+
+    if (turn.speaker === 'patient') {
+      const chunks = turn.text.split(/(\s+)/);
+      let wordIdx = 0;
+      chunks.forEach(chunk => {
+        if (/^\s+$/.test(chunk)) {
+          const sp = document.createElement('span');
+          sp.className = 'ann-space';
+          sp.textContent = chunk;
+          sp.dataset.turn = ti;
+          sp.dataset.before = wordIdx - 1;
+          sp.dataset.after = wordIdx;
+          textDiv.appendChild(sp);
+        } else {
+          const span = document.createElement('span');
+          span.className = 'ann-word';
+          span.textContent = chunk;
+          span.dataset.turn = ti;
+          span.dataset.word = wordIdx++;
+          span.onclick = () => annWordClick(span, ti);
+          textDiv.appendChild(span);
+        }
+      });
+    } else {
+      textDiv.textContent = turn.text;
+      textDiv.style.opacity = '.7';
+    }
+    div.appendChild(textDiv);
+
+    if (turn.speaker === 'patient') {
+      // Badges annotations existantes
+      const badges = document.createElement('div');
+      badges.className = 'ann-turn-footer';
+      badges.id = `ann-footer-${ti}`;
+
+      const noEmoBtn = document.createElement('button');
+      noEmoBtn.className = 'ann-no-emo-btn' + (turn.noEmotion ? ' active' : '');
+      noEmoBtn.textContent = '∅ Absence d\'émotion';
+      noEmoBtn.onclick = () => annToggleNoEmotion(ti, noEmoBtn);
+      badges.appendChild(noEmoBtn);
+
+      // Griser le texte si noEmotion déjà actif
+      if (turn.noEmotion) textDiv.style.opacity = '.4';
+
+
+      // Regrouper les annotations par groupId pour affichage
+      const groupsSeen = new Set();
+      turn.annotations.forEach((ann, ai) => {
+        // Construire le label du badge
+        const emoLabels = (ann.emotions||[]).map(id => ANN_EMO.find(x=>x.id===id)?.label||id);
+        const emo2Labels = (ann.emotions2||[]).map(id => annEmo2Label(id));
+        const libre = (ann.emotionLibre||'').trim();
+        const allLabels = [...emoLabels, ...emo2Labels, ...(libre ? [libre] : [])];
+        const labelText = allLabels.length ? allLabels.join(', ') : '—';
+
+        const emoColors = (ann.emotions||[]).map(e => ANN_EMO.find(x=>x.id===e)?.color||'#888');
+        const dotColor = emoColors[0] || '#888';
+        const dot = `<span class="ann-tag-dot" style="background:${dotColor}"></span>`;
+
+        const groupMark = ann.groupId ? `<span title="Segment groupé #${ann.groupId}" style="margin-left:3px;font-size:9px;opacity:.6;">⋯</span>` : '';
+
+        const b = document.createElement('span');
+        b.className = 'ann-badge';
+        b.style.cursor = 'pointer';
+        b.title = `« ${ann.text} » | Polarité: ${ann.polarite||'—'} | Intensité: ${ann.intensite||'—'}`;
+
+        // Label cliquable pour éditer
+        const label = document.createElement('span');
+        label.innerHTML = `${dot}${labelText}${groupMark}`;
+        label.onclick = () => annEditAnnotation(ti, ai);
+        b.appendChild(label);
+
+        // Croix de suppression
+        const del = document.createElement('span');
+        del.textContent = '×';
+        del.title = 'Supprimer cette annotation';
+        del.style.cssText = 'margin-left:5px;font-size:13px;line-height:1;opacity:.5;font-weight:bold;vertical-align:middle;';
+        del.onmouseenter = () => del.style.opacity = '1';
+        del.onmouseleave = () => del.style.opacity = '.5';
+        del.onclick = (e) => {
+          e.stopPropagation();
+          annDeleteAnnotation(ti, ai);
+        };
+        b.appendChild(del);
+
+        badges.appendChild(b);
+      });
+
+      div.appendChild(badges);
+    }
+    container.appendChild(div);
+  });
+  annRefreshWordHighlights();
+}
+
+// ── Sélection à la souris ──
+
+function annSetupMouseSelection() {
+  if (annSetupMouseSelection._done) return;
+  annSetupMouseSelection._done = true;
+  document.addEventListener('mouseup', () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.toString().trim()) return;
+
+    // Trouver si la sélection est dans un tour patient
+    let node = sel.anchorNode;
+    let turnDiv = null;
+    while (node && node !== document.body) {
+      if (node.classList && node.classList.contains('ann-turn') && node.classList.contains('ann-patient')) {
+        turnDiv = node; break;
+      }
+      node = node.parentNode;
+    }
+    if (!turnDiv) return;
+
+    const ti = parseInt(turnDiv.dataset.turn);
+    const turn = annTurns[ti];
+    if (!turn || turn.noEmotion) { sel.removeAllRanges(); return; }
+
+    // Désélectionner les autres tours
+    if (annCurrentSelection.turnIdx !== null && annCurrentSelection.turnIdx !== ti) {
+      document.querySelectorAll(`.ann-word[data-turn="${annCurrentSelection.turnIdx}"]`)
+        .forEach(w => w.classList.remove('selected'));
+    }
+    annCurrentSelection.turnIdx = ti;
+
+    // Trouver quels mots (.ann-word) sont dans la sélection
+    const range = sel.getRangeAt(0);
+    const words = turnDiv.querySelectorAll('.ann-word');
+    let anySelected = false;
+    words.forEach(w => {
+      const wRange = document.createRange();
+      wRange.selectNode(w);
+      // Le mot est sélectionné si son range chevauche la sélection
+      const overlap = range.compareBoundaryPoints(Range.END_TO_START, wRange) < 0 &&
+                      range.compareBoundaryPoints(Range.START_TO_END, wRange) > 0;
+      if (overlap) { w.classList.add('selected'); anySelected = true; }
+    });
+
+    sel.removeAllRanges(); // effacer la sélection native (texte bleu du navigateur)
+
+    if (anySelected) {
+      const selected = [...turnDiv.querySelectorAll('.ann-word.selected')];
+      annColorSelectionSpaces(ti);
+      annOpenPanel(ti, selected);
+    }
+  });
+}
+
+function annWordClick(span, ti) {
+  const turn = annTurns[ti];
+  if (turn.noEmotion) return;
+
+
+  if (annCurrentSelection.turnIdx !== null && annCurrentSelection.turnIdx !== ti) {
+    document.querySelectorAll(`.ann-word[data-turn="${annCurrentSelection.turnIdx}"]`)
+      .forEach(w => w.classList.remove('selected'));
+    annColorSelectionSpaces(annCurrentSelection.turnIdx);
+  }
+  annCurrentSelection.turnIdx = ti;
+  span.classList.toggle('selected');
+  annColorSelectionSpaces(ti);
+
+  const selected = [...document.querySelectorAll(`.ann-word[data-turn="${ti}"].selected`)];
+  if (selected.length > 0) annOpenPanel(ti, selected);
+  else annClosePanel();
+}
+
+function annOpenPanel(ti, selectedSpans) {
+  const words = selectedSpans.map(s => s.textContent);
+  const wordIndices = selectedSpans.map(s => parseInt(s.dataset.word));
+
+  // Construire l'affichage avec [...] pour les sauts
+  const displayParts = [];
+  for (let i = 0; i < words.length; i++) {
+    if (i > 0 && wordIndices[i] > wordIndices[i-1] + 1) {
+      displayParts.push('[…]');
+    }
+    displayParts.push(words[i]);
+  }
+  const displayText = '« ' + displayParts.join(' ') + ' »';
+
+  annPanelState = {
+    turnIdx: ti, wordIndices,
+    emotions: [], emotions2: [], emotionLibre: '',
+    emotionLitterale: annAnnotationMode === 'litterale' ? 'Oui' : null,
+    emotionInferee:   annAnnotationMode === 'inferee'   ? 'Oui' : null,
+    polarite: null, intensite: null, modificateurs: [],
+    experient: null, cible: null, source: null,
+    comment: '',
+    pendingGroupId: null,
+    editingIndex: null
+  };
+
+  document.getElementById('ann-panel-sel').textContent = displayText;
+  document.getElementById('ann-comment').value = '';
+  document.getElementById('ann-emo-secondary') && (document.getElementById('ann-emo-secondary').style.display = 'none');
+  document.getElementById('ann-emo-plus-btn') && (document.getElementById('ann-emo-plus-btn').textContent = '+ Plus');
+  document.getElementById('ann-emo-required') && (document.getElementById('ann-emo-required').style.display = 'none');
+  annShowMode();
+  // Ouvrir la Roue + synchroniser bouton Littérale/Inférée
+  setTimeout(() => {
+    annOpenSubSection('roue');
+    annSetAnnotationMode('__sync__');
+  }, 0);
+  document.getElementById('ann-panel').classList.add('open');
+}
+
+function annClosePanel() {
+  document.getElementById('ann-panel').classList.remove('open');
+  if (annCurrentSelection.turnIdx !== null) {
+    const ti = annCurrentSelection.turnIdx;
+    document.querySelectorAll(`.ann-word[data-turn="${ti}"]`)
+      .forEach(w => w.classList.remove('selected'));
+    // Réinitialiser les espaces puis restaurer les couleurs d'annotation
+    document.querySelectorAll(`.ann-space[data-turn="${ti}"]`)
+      .forEach(sp => sp.style.background = '');
+    annRefreshWordHighlights();
+  }
+  annCurrentSelection.turnIdx = null;
+  annPanelState.turnIdx = null;
+  annPanelState.editingIndex = null;
+}
+
+// ── Chips du panneau ──
+
+// ── Mode guidé / libre ──
+
+let annGuidedMode = false; // false = libre (défaut)
+let annWizStep = 0;
+
+const ANN_WIZ_STEPS = [
+  { id: 'emotion',      label: 'Émotion(s)',    required: true  },
+  { id: 'polarite',     label: 'Polarité',      required: false },
+  { id: 'intensite',    label: 'Intensité',     required: false },
+  { id: 'modificateurs',label: 'Modificateurs', required: false },
+  { id: 'roles',        label: 'Rôles',         required: false },
+  { id: 'commentaire',  label: 'Commentaire',   required: false },
+  { id: 'recap',        label: 'Récapitulatif', required: false },
+];
+
+function annShowMode() {
+  const wizard   = document.getElementById('ann-wizard');
+  const freeform = document.getElementById('ann-freeform');
+  const modeBtn  = document.getElementById('ann-mode-btn');
+  if (annGuidedMode) {
+    wizard.style.display   = 'flex';
+    freeform.style.display = 'none';
+    modeBtn.textContent    = 'Mode libre';
+    annWizStep = 0;
+    annWizRender();
+  } else {
+    // Vider le contenu du wizard pour éviter les IDs dupliqués
+    const wizContent = document.getElementById('ann-wiz-content');
+    if (wizContent) wizContent.innerHTML = '';
+    wizard.style.display   = 'none';
+    freeform.style.display = 'block';
+    modeBtn.textContent    = 'Mode guidé';
+    annBuildChips();
+  }
+}
+
+function annToggleMode() {
+  annGuidedMode = !annGuidedMode;
+  annShowMode();
+}
+
+// ── Wizard ──
+
+function annWizRender() {
+  const step = ANN_WIZ_STEPS[annWizStep];
+  const total = ANN_WIZ_STEPS.length;
+
+  // Points de progression
+  const dots = document.getElementById('ann-wiz-dots');
+  dots.innerHTML = ANN_WIZ_STEPS.map((s, i) => {
+    const active = i === annWizStep;
+    const done   = i < annWizStep;
+    const bg = done ? 'var(--acc)' : active ? '#fff' : 'rgba(255,255,255,.25)';
+    const border = active ? '2px solid #fff' : 'none';
+    return `<div style="width:8px;height:8px;border-radius:50%;background:${bg};border:${border};flex-shrink:0;"></div>`;
+  }).join('');
+
+  document.getElementById('ann-wiz-step-label').textContent =
+    `Étape ${annWizStep + 1} / ${total} — ${step.label}`;
+
+  // Bouton retour
+  document.getElementById('ann-wiz-back').style.display = annWizStep === 0 ? 'none' : '';
+
+  // Bouton suivant / valider
+  const nextBtn = document.getElementById('ann-wiz-next');
+  const isLast  = annWizStep === total - 1;
+  nextBtn.textContent = isLast ? '✓ Valider' : (step.required ? 'Suivant →' : 'Suivant →');
+  nextBtn.style.background = isLast ? 'var(--pat)' : 'var(--acc)';
+
+  // Contenu
+  const content = document.getElementById('ann-wiz-content');
+  content.innerHTML = '';
+
+  if (step.id === 'emotion') {
+    content.appendChild(annWizEmoBlock());
+    // Ouvrir la Roue par défaut
+    setTimeout(() => annOpenSubSection('roue'), 0);
+  } else if (step.id === 'polarite') {
+    content.appendChild(annWizRadioBlock('Polarité', ANN_POL, 'polarite'));
+  } else if (step.id === 'intensite') {
+    content.appendChild(annWizRadioBlock('Intensité', ANN_INT, 'intensite'));
+  } else if (step.id === 'modificateurs') {
+    content.appendChild(annWizMultiBlock('Modificateurs', ANN_MOD, 'modificateurs'));
+  } else if (step.id === 'roles') {
+    content.appendChild(annWizRolesBlock());
+  } else if (step.id === 'commentaire') {
+    content.appendChild(annWizCommentBlock());
+  } else if (step.id === 'recap') {
+    content.appendChild(annWizRecapBlock());
+  }
+}
+
+function annWizEmoBlock() {
+  const wrap = document.createElement('div');
+
+  const title = document.createElement('div');
+  title.className = 'ann-section-title';
+  title.style.marginBottom = '10px';
+  title.innerHTML = 'Émotions <span id="ann-emo-required" style="font-size:10px;color:#C0392B;display:none;">⚠ obligatoire</span>';
+  wrap.appendChild(title);
+
+  // Boutons Roue / Dyades (même logique que mode libre)
+  const btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:6px;margin-bottom:8px;';
+  const mkBtn = (label, which) => {
+    const b = document.createElement('button');
+    b.id = `ann-btn-${which}`;
+    b.textContent = label;
+    b.style.cssText = 'flex:1;padding:2px 8px;border-radius:100px;border:1.5px solid var(--bd);background:var(--bg);cursor:pointer;font-size:11.5px;font-family:IBM Plex Sans,sans-serif;color:var(--t2);';
+    b.onclick = () => annToggleSubSection(which);
+    return b;
+  };
+  btnRow.appendChild(mkBtn('Roue', 'roue'));
+  btnRow.appendChild(mkBtn('Dyades', 'dyades'));
+  wrap.appendChild(btnRow);
+
+  const subRoue = document.createElement('div');
+  subRoue.id = 'ann-sub-roue';
+  subRoue.style.display = 'none';
+  wrap.appendChild(subRoue);
+
+  const subDyad = document.createElement('div');
+  subDyad.id = 'ann-sub-dyades';
+  subDyad.style.display = 'none';
+  wrap.appendChild(subDyad);
+
+  const freeInput = document.createElement('input');
+  freeInput.id = 'ann-emo-free';
+  freeInput.type = 'text';
+  freeInput.placeholder = 'Émotion non listée (saisie libre)…';
+  freeInput.value = annPanelState.emotionLibre || '';
+  freeInput.style.cssText = 'margin-top:8px;width:100%;padding:5px 9px;border:1.5px solid var(--bd);border-radius:6px;font-size:12px;font-family:IBM Plex Sans,sans-serif;background:var(--bg);color:var(--t1);box-sizing:border-box;';
+  freeInput.oninput = () => annPanelState.emotionLibre = freeInput.value;
+  wrap.appendChild(freeInput);
+
+  return wrap;
+}
+
+function annWizRadioBlock(label, options, stateKey) {
+  const wrap = document.createElement('div');
+  const title = document.createElement('div');
+  title.className = 'ann-section-title';
+  title.style.marginBottom = '8px';
+  title.textContent = label;
+  wrap.appendChild(title);
+
+  const note = document.createElement('div');
+  note.style.cssText = 'font-size:11px;color:var(--t3);margin-bottom:10px;';
+  note.textContent = 'Optionnel — cliquez sur Suivant pour passer.';
+  wrap.appendChild(note);
+
+  const chips = document.createElement('div');
+  chips.className = 'ann-chips';
+  options.forEach(opt => {
+    const chip = document.createElement('span');
+    chip.className = 'ann-chip' + (annPanelState[stateKey] === opt ? ' on' : '');
+    chip.textContent = opt;
+    chip.onclick = () => {
+      chips.querySelectorAll('.ann-chip').forEach(c => c.classList.remove('on'));
+      chip.classList.add('on');
+      annPanelState[stateKey] = opt;
+    };
+    chips.appendChild(chip);
+  });
+  wrap.appendChild(chips);
+  return wrap;
+}
+
+function annWizMultiBlock(label, options, stateKey) {
+  const wrap = document.createElement('div');
+  const title = document.createElement('div');
+  title.className = 'ann-section-title';
+  title.style.marginBottom = '8px';
+  title.textContent = label;
+  wrap.appendChild(title);
+
+  const note = document.createElement('div');
+  note.style.cssText = 'font-size:11px;color:var(--t3);margin-bottom:10px;';
+  note.textContent = 'Optionnel — plusieurs choix possibles.';
+  wrap.appendChild(note);
+
+  const chips = document.createElement('div');
+  chips.className = 'ann-chips';
+  options.forEach(opt => {
+    const chip = document.createElement('span');
+    chip.className = 'ann-chip' + (annPanelState[stateKey].includes(opt) ? ' on' : '');
+    chip.textContent = opt;
+    chip.onclick = () => {
+      chip.classList.toggle('on');
+      if (chip.classList.contains('on')) annPanelState[stateKey].push(opt);
+      else annPanelState[stateKey] = annPanelState[stateKey].filter(x => x !== opt);
+    };
+    chips.appendChild(chip);
+  });
+  wrap.appendChild(chips);
+  return wrap;
+}
+
+function annWizNatureBlock() {
+  const wrap = document.createElement('div');
+  const title = document.createElement('div');
+  title.className = 'ann-section-title';
+  title.style.marginBottom = '10px';
+  title.textContent = 'Nature de l\'émotion';
+  wrap.appendChild(title);
+  const note = document.createElement('div');
+  note.style.cssText = 'font-size:11px;color:var(--t3);margin-bottom:12px;';
+  note.textContent = 'Optionnel — littérale (énoncé) ou inférée (contexte).';
+  wrap.appendChild(note);
+  const div = document.createElement('div');
+  div.id = 'ann-nature-wiz';
+  div.style.display = 'flex';
+  div.style.flexDirection = 'column';
+  div.style.gap = '8px';
+  wrap.appendChild(div);
+  setTimeout(() => annBuildNatureBlock('ann-nature-wiz'), 0);
+  return wrap;
+}
+
+function annWizRolesBlock() {
+  const wrap = document.createElement('div');
+  const title = document.createElement('div');
+  title.className = 'ann-section-title';
+  title.style.marginBottom = '8px';
+  title.textContent = 'Rôles émotionnels';
+  wrap.appendChild(title);
+
+  const note = document.createElement('div');
+  note.style.cssText = 'font-size:11px;color:var(--t3);margin-bottom:12px;';
+  note.textContent = 'Optionnel — qui ressent, qui est visé, qui rapporte.';
+  wrap.appendChild(note);
+
+  const div = document.createElement('div');
+  div.id = 'ann-roles-wiz';
+  wrap.appendChild(div);
+  // Construire via la fonction commune après insertion
+  setTimeout(() => annBuildRolesBlock('ann-roles-wiz'), 0);
+  return wrap;
+}
+
+function annWizCommentBlock() {
+  const wrap = document.createElement('div');
+  const title = document.createElement('div');
+  title.className = 'ann-section-title';
+  title.style.marginBottom = '8px';
+  title.textContent = 'Commentaire libre';
+  wrap.appendChild(title);
+
+  const note = document.createElement('div');
+  note.style.cssText = 'font-size:11px;color:var(--t3);margin-bottom:10px;';
+  note.textContent = 'Optionnel — observations, doutes, contexte…';
+  wrap.appendChild(note);
+
+  const ta = document.createElement('textarea');
+  ta.className = 'ann-comment';
+  ta.placeholder = 'Votre commentaire…';
+  ta.value = annPanelState.comment || '';
+  ta.style.width = '100%';
+  ta.oninput = () => annPanelState.comment = ta.value;
+  wrap.appendChild(ta);
+  return wrap;
+}
+
+function annWizRecapBlock() {
+  const wrap = document.createElement('div');
+  wrap.innerHTML = '<div class="ann-section-title" style="margin-bottom:12px;">Récapitulatif</div>';
+
+  const rows = [
+    ['Passage', document.getElementById('ann-panel-sel')?.textContent || '—'],
+    ['Émotions', [...annPanelState.emotions.map(id => ANN_EMO.find(e=>e.id===id)?.label||id),
+                  ...annPanelState.emotions2.map(id => annEmo2Label(id)),
+                  annPanelState.emotionLibre].filter(Boolean).join(', ') || '—'],
+    ['Polarité', annPanelState.polarite || '—'],
+    ['Intensité', annPanelState.intensite || '—'],
+    ['Modificateurs', annPanelState.modificateurs.join(', ') || '—'],
+    ['Émotion littérale',  annPanelState.emotionLitterale || '—'],
+    ['Émotion inférée',    annPanelState.emotionInferee   || '—'],
+    ['Expérient', annPanelState.experient || '—'],
+    ['Cible', annPanelState.cible || '—'],
+    ['Source', annPanelState.source || '—'],
+    ['Commentaire', annPanelState.comment || '—'],
+  ];
+
+  rows.forEach(([k, v]) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;font-size:12.5px;';
+    row.innerHTML = `<span style="color:var(--t3);min-width:90px;flex-shrink:0;">${k}</span><span style="color:var(--t1);font-weight:500;">${v}</span>`;
+    wrap.appendChild(row);
+  });
+
+  return wrap;
+}
+
+function annWizBack() {
+  if (annWizStep > 0) { annWizStep--; annWizRender(); }
+}
+
+function annWizNext() {
+  const step = ANN_WIZ_STEPS[annWizStep];
+  // Validation étape émotion
+  if (step.id === 'emotion') {
+    const hasEmo = annPanelState.emotions.length > 0 || annPanelState.emotions2.length > 0 || (annPanelState.emotionLibre||'').trim();
+    if (!hasEmo) {
+      const req = document.getElementById('ann-emo-required');
+      if (req) { req.style.display = 'inline'; req.animate([{opacity:0},{opacity:1},{opacity:0},{opacity:1}],{duration:600}); }
+      return;
+    }
+  }
+  if (annWizStep < ANN_WIZ_STEPS.length - 1) {
+    annWizStep++;
+    annWizRender();
+  } else {
+    annValidate();
+  }
+}
+
+// Roue de Plutchik complète — 3 intensités par axe
+const ANN_ROUE = [
+  { weak:'Sérénité',    basic:{id:'joie',        label:'Joie',         color:'#E6A817'}, strong:'Extase'          },
+  { weak:'Acceptation', basic:{id:'confiance',    label:'Confiance',    color:'#27AE60'}, strong:'Admiration'      },
+  { weak:'Appréhension',basic:{id:'peur',         label:'Peur',         color:'#7B5EA7'}, strong:'Terreur'         },
+  { weak:'Distraction', basic:{id:'surprise',     label:'Surprise',     color:'#16A085'}, strong:'Émerveillement'  },
+  { weak:'Mélancolie',  basic:{id:'tristesse',    label:'Tristesse',    color:'#4E72D6'}, strong:'Chagrin'         },
+  { weak:'Ennui',       basic:{id:'degout',       label:'Dégoût',       color:'#7F8C8D'}, strong:'Répulsion'       },
+  { weak:'Agacement',   basic:{id:'colere',       label:'Colère',       color:'#C0392B'}, strong:'Rage'            },
+  { weak:'Intérêt',     basic:{id:'anticipation', label:'Anticipation', color:'#D35400'}, strong:'Vigilance'       },
+];
+
+const ANN_DYADES = [
+  ['Amour','Soumission','Sentimentalisme','Domination','Fierté'],
+  ['Effroi','Anxiété','Désespoir','Honte'],
+  ['Mépris','Agressivité','Cynisme','Outrage','Envie','Remords'],
+  ['Curiosité','Incrédulité','Désappointement'],
+  ['Optimisme','Espoir','Pessimisme'],
+  ['Morbidité','Culpabilité','Plaisir'],
+];
+
+// Compatibilité : retrouver le label d'une émotion secondaire par son id
+function annEmo2Label(id) {
+  // Format: sec_label_normalise
+  if (!id) return id;
+  const fromId = id.replace(/^sec_/, '').replace(/_/g, ' ');
+  // Chercher dans Roue (weak/strong)
+  for (const row of ANN_ROUE) {
+    if (row.weak.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s/g,'_') === id.replace(/^sec_/,''))
+      return row.weak;
+    if (row.strong.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s/g,'_') === id.replace(/^sec_/,''))
+      return row.strong;
+  }
+  // Chercher dans Dyades
+  for (const group of ANN_DYADES) {
+    for (const label of group) {
+      if (label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s/g,'_') === id.replace(/^sec_/,''))
+        return label;
+    }
+  }
+  // Fallback : remettre en forme l'id
+  return fromId.charAt(0).toUpperCase() + fromId.slice(1);
+}
+
+
+const ANN_NATURE_FIELDS = [
+  { id:'emotionLitterale', label:'Émotion littérale',        hint:'Exprimée directement par l\'énoncé' },
+  { id:'emotionInferee',   label:'Émotion inférée / implicite', hint:'Déduite du contexte'            },
+];
+
+function annBuildNatureBlock(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  ANN_NATURE_FIELDS.forEach(field => {
+    const row = document.createElement('div');
+    row.className = 'ann-nature-row';
+
+    const lbl = document.createElement('span');
+    lbl.className = 'ann-nature-row-label';
+    lbl.innerHTML = `${field.label}<small>${field.hint}</small>`;
+    row.appendChild(lbl);
+
+    ['Oui','Non'].forEach(val => {
+      const chip = document.createElement('span');
+      chip.className = 'ann-nature-chip';
+      chip.textContent = val;
+      const cls = val === 'Oui' ? 'on-oui' : 'on-non';
+      if (annPanelState[field.id] === val) chip.classList.add(cls);
+      chip.onclick = () => {
+        // Toggle
+        if (annPanelState[field.id] === val) {
+          annPanelState[field.id] = null;
+          chip.classList.remove(cls);
+        } else {
+          annPanelState[field.id] = val;
+          // Désélectionner l'autre chip de la même ligne
+          row.querySelectorAll('.ann-nature-chip').forEach(c => c.classList.remove('on-oui','on-non'));
+          chip.classList.add(cls);
+        }
+      };
+      row.appendChild(chip);
+    });
+
+    container.appendChild(row);
+  });
+}
+
+function annBuildRolesBlock(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+
+  const table = document.createElement('table');
+  table.className = 'ann-role-grid';
+
+  // En-tête avec abréviations
+  const thead = document.createElement('thead');
+  const hrow = document.createElement('tr');
+  const thEmpty = document.createElement('th');
+  hrow.appendChild(thEmpty);
+  ANN_ROLE_OPTS.forEach(opt => {
+    const th = document.createElement('th');
+    th.textContent = opt.label;
+    th.title = opt.value;
+    hrow.appendChild(th);
+  });
+  thead.appendChild(hrow);
+  table.appendChild(thead);
+
+  // Corps : une ligne par rôle
+  const tbody = document.createElement('tbody');
+  ANN_ROLES.forEach(role => {
+    const tr = document.createElement('tr');
+    tr.title = role.title;
+
+    const tdLabel = document.createElement('td');
+    tdLabel.textContent = role.label;
+    tr.appendChild(tdLabel);
+
+    ANN_ROLE_OPTS.forEach(opt => {
+      const td = document.createElement('td');
+      const radio = document.createElement('input');
+      radio.type = 'radio';
+      radio.name = `ann-role-${containerId}-${role.id}`;
+      radio.value = opt.value;
+      radio.checked = annPanelState[role.id] === opt.value;
+
+      // Toggle : recliquer désélectionne
+      radio.addEventListener('click', function() {
+        if (annPanelState[role.id] === opt.value) {
+          this.checked = false;
+          annPanelState[role.id] = null;
+        } else {
+          annPanelState[role.id] = opt.value;
+        }
+      });
+
+      td.appendChild(radio);
+      tr.appendChild(td);
+    });
+
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  container.appendChild(table);
+}
+function annBuildChips() {
+  // Polarité (radio)
+  annBuildRadioChips('ann-chips-pol', ANN_POL, v => annPanelState.polarite = v);
+  // Intensité (radio)
+  annBuildRadioChips('ann-chips-int', ANN_INT, v => annPanelState.intensite = v);
+  // Modificateurs (multi)
+  const modDiv = document.getElementById('ann-chips-mod');
+  modDiv.innerHTML = '';
+  ANN_MOD.forEach(m => {
+    const chip = document.createElement('span');
+    chip.className = 'ann-chip';
+    chip.textContent = m;
+    chip.onclick = () => {
+      chip.classList.toggle('on');
+      if (chip.classList.contains('on')) annPanelState.modificateurs.push(m);
+      else annPanelState.modificateurs = annPanelState.modificateurs.filter(x=>x!==m);
+    };
+    modDiv.appendChild(chip);
+  });
+  // Rôles émotionnels
+  annBuildRolesBlock('ann-roles-free');
+}
+
+function annMakeSecondaryChip(label) {
+  const id = 'sec_' + label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s/g,'_');
+  const chip = document.createElement('span');
+  chip.className = 'ann-chip' + (annPanelState.emotions2.includes(id) ? ' on' : '');
+  chip.textContent = label;
+  chip.onclick = () => {
+    chip.classList.toggle('on');
+    // Synchroniser tous les chips du même label dans la page
+    document.querySelectorAll('.ann-chip').forEach(c => {
+      if (c.textContent === label && c !== chip) c.classList.toggle('on', chip.classList.contains('on'));
+    });
+    if (chip.classList.contains('on')) { if (!annPanelState.emotions2.includes(id)) annPanelState.emotions2.push(id); }
+    else annPanelState.emotions2 = annPanelState.emotions2.filter(x => x !== id);
+    if (annPanelState.emotions.length > 0 || annPanelState.emotions2.length > 0)
+      document.getElementById('ann-emo-required') && (document.getElementById('ann-emo-required').style.display = 'none');
+  };
+  return chip;
+}
+
+function annBuildRoue(containerId) {
+  const div = document.getElementById(containerId);
+  if (!div) return;
+  div.innerHTML = '';
+  ANN_ROUE.forEach(row => {
+    const rowDiv = document.createElement('div');
+    rowDiv.style.cssText = 'display:flex;align-items:center;gap:4px;margin-bottom:4px;';
+
+    // Faible
+    const c1 = annMakeSecondaryChip(row.weak);
+    rowDiv.appendChild(c1);
+
+    // Base (émotion primaire)
+    const cb = document.createElement('span');
+    cb.className = 'ann-chip' + (annPanelState.emotions.includes(row.basic.id) ? ' emo-on' : '');
+    cb.textContent = row.basic.label;
+    cb.style.fontWeight = '';
+    if (annPanelState.emotions.includes(row.basic.id)) {
+      cb.style.background = row.basic.color;
+      cb.style.color = '#fff';
+      cb.style.borderColor = row.basic.color;
+    }
+    cb.onclick = () => {
+      const on = cb.classList.toggle('emo-on');
+      cb.style.background  = on ? row.basic.color : '';
+      cb.style.color       = on ? '#fff' : '';
+      cb.style.borderColor = on ? row.basic.color : '';
+      if (on) { if (!annPanelState.emotions.includes(row.basic.id)) annPanelState.emotions.push(row.basic.id); }
+      else annPanelState.emotions = annPanelState.emotions.filter(x => x !== row.basic.id);
+      document.getElementById('ann-emo-required') && (document.getElementById('ann-emo-required').style.display = 'none');
+    };
+    rowDiv.appendChild(cb);
+
+    // Fort
+    const c2 = annMakeSecondaryChip(row.strong);
+    rowDiv.appendChild(c2);
+
+    div.appendChild(rowDiv);
+  });
+}
+
+function annBuildDyades(containerId) {
+  const div = document.getElementById(containerId);
+  if (!div) return;
+  div.innerHTML = '';
+  ANN_DYADES.forEach(group => {
+    const rowDiv = document.createElement('div');
+    rowDiv.className = 'ann-chips';
+    rowDiv.style.marginBottom = '5px';
+    group.forEach(label => rowDiv.appendChild(annMakeSecondaryChip(label)));
+    div.appendChild(rowDiv);
+  });
+}
+
+function annOpenSubSection(which) {
+  const roueDiv  = document.getElementById('ann-sub-roue');
+  const dyadDiv  = document.getElementById('ann-sub-dyades');
+  const btnRoue  = document.getElementById('ann-btn-roue');
+  const btnDyad  = document.getElementById('ann-btn-dyades');
+
+  roueDiv.style.display = 'none';
+  dyadDiv.style.display = 'none';
+  [btnRoue, btnDyad].forEach(b => { if(b){ b.style.background='var(--bg)'; b.style.borderColor='var(--bd)'; b.style.color='var(--t2)'; b.style.fontWeight=''; }});
+
+  if (which === 'roue') {
+    annBuildRoue('ann-sub-roue');
+    roueDiv.style.display = 'block';
+    if(btnRoue){ btnRoue.style.background='var(--acc)'; btnRoue.style.borderColor='var(--acc)'; btnRoue.style.color='#fff'; btnRoue.style.fontWeight='500'; }
+  } else {
+    annBuildDyades('ann-sub-dyades');
+    dyadDiv.style.display = 'block';
+    if(btnDyad){ btnDyad.style.background='var(--acc)'; btnDyad.style.borderColor='var(--acc)'; btnDyad.style.color='#fff'; btnDyad.style.fontWeight='500'; }
+  }
+}
+
+function annToggleSubSection(which) {
+  const roueDiv  = document.getElementById('ann-sub-roue');
+  const dyadDiv  = document.getElementById('ann-sub-dyades');
+  const btnRoue  = document.getElementById('ann-btn-roue');
+  const btnDyad  = document.getElementById('ann-btn-dyades');
+
+  const isActive = (which === 'roue' ? roueDiv : dyadDiv).style.display !== 'none';
+
+  // Toggle
+  roueDiv.style.display = 'none';
+  dyadDiv.style.display = 'none';
+  [btnRoue, btnDyad].forEach(b => { if(b){ b.style.background='var(--bg)'; b.style.borderColor='var(--bd)'; b.style.color='var(--t2)'; b.style.fontWeight=''; }});
+
+  if (!isActive) {
+    if (which === 'roue') {
+      annBuildRoue('ann-sub-roue');
+      roueDiv.style.display = 'block';
+      btnRoue.style.background  = 'var(--acc)';
+      btnRoue.style.borderColor = 'var(--acc)';
+      btnRoue.style.color       = '#fff';
+      btnRoue.style.fontWeight  = '500';
+    } else {
+      annBuildDyades('ann-sub-dyades');
+      dyadDiv.style.display = 'block';
+      btnDyad.style.background  = 'var(--acc)';
+      btnDyad.style.borderColor = 'var(--acc)';
+      btnDyad.style.color       = '#fff';
+      btnDyad.style.fontWeight  = '500';
+    }
+  }
+}
+
+// Alias pour compatibilité
+function annFilterEmo2() {}
+function annFilterCustom() {}
+
+function annToggleSecondaryEmo() {
+  const sec = document.getElementById('ann-emo-secondary');
+  const btn = document.getElementById('ann-emo-plus-btn');
+  const visible = sec.style.display !== 'none';
+  sec.style.display = visible ? 'none' : 'block';
+  btn.textContent = visible ? '+ Plus' : '− Moins';
+}
+
+function annBuildRadioChips(containerId, options, onChange) {
+  const div = document.getElementById(containerId);
+  div.innerHTML = '';
+  options.forEach(opt => {
+    const chip = document.createElement('span');
+    chip.className = 'ann-chip';
+    chip.textContent = opt;
+    chip.onclick = () => {
+      const already = chip.classList.contains('on');
+      div.querySelectorAll('.ann-chip').forEach(c => c.classList.remove('on'));
+      if (!already) {
+        chip.classList.add('on');
+        onChange(opt);
+      } else {
+        onChange(null); // désactivé
+      }
+    };
+    div.appendChild(chip);
+  });
+}
+
+// ── Validation ──
+
+function annValidate() {
+  const { turnIdx, wordIndices, emotions, emotions2, emotionLibre, polarite, intensite, modificateurs } = annPanelState;
+  if (turnIdx === null) return;
+
+  // Obligation : au moins une émotion cochée (principale ou secondaire ou libre)
+  const hasEmotion = emotions.length > 0 || emotions2.length > 0 || (emotionLibre && emotionLibre.trim());
+  if (!hasEmotion) {
+    const req = document.getElementById('ann-emo-required');
+    req.style.display = 'inline';
+    req.animate([{opacity:0},{opacity:1},{opacity:0},{opacity:1}], {duration:600});
+    return;
+  }
+
+  const selectedSpans = [...document.querySelectorAll(`.ann-word[data-turn="${turnIdx}"].selected`)];
+  // Construire le texte avec […] entre segments non contigus
+  const textParts = [];
+  for (let i = 0; i < selectedSpans.length; i++) {
+    if (i > 0 && wordIndices[i] > wordIndices[i-1] + 1) textParts.push('[…]');
+    textParts.push(selectedSpans[i].textContent);
+  }
+  const text = textParts.join(' ');
+  const commentEl = document.getElementById('ann-comment');
+  const comment = annPanelState.comment || (commentEl ? commentEl.value.trim() : '');
+
+  const annotation = {
+    text, wordIndices, emotions, emotions2,
+    emotionLibre: emotionLibre?.trim() || '',
+    annotationType: annAnnotationMode,
+    emotionLitterale: annPanelState.emotionLitterale || null,
+    emotionInferee:   annPanelState.emotionInferee   || null,
+    polarite, intensite, modificateurs,
+    experient: annPanelState.experient || null,
+    cible:     annPanelState.cible     || null,
+    source:    annPanelState.source    || null,
+    comment,
+    groupId: annPanelState.pendingGroupId || null,
+    ts: Date.now()
+  };
+
+  // Remplacement si édition, ajout sinon
+  if (annPanelState.editingIndex !== null) {
+    annTurns[turnIdx].annotations[annPanelState.editingIndex] = annotation;
+  } else {
+    annTurns[turnIdx].annotations.push(annotation);
+  }
+  annPanelState.pendingGroupId = null;
+  annPanelState.editingIndex = null;
+
+  annClosePanel();
+  annRenderTurns();
+  annSaveState();
+}
+
+function annAddDiscontiguousSegment(ti, groupId, sourceAnn) {
+  // Préparer le panneau pour un nouveau segment lié au même groupe
+  annCurrentSelection.turnIdx = ti;
+  // Vider la sélection courante
+  document.querySelectorAll(`.ann-word[data-turn="${ti}"].selected`).forEach(w => w.classList.remove('selected'));
+
+  // Stocker le groupId pour la prochaine validation
+  annPanelState.pendingGroupId = groupId;
+  // Mettre aussi à jour le groupId de l'annotation source si elle n'en avait pas
+  const src = annTurns[ti].annotations.find(a => a === sourceAnn);
+  if (src && !src.groupId) src.groupId = groupId;
+
+  // Ouvrir un panneau vide en indiquant le contexte
+  annPanelState = {
+    ...annPanelState,
+    turnIdx: ti, wordIndices: [],
+    emotions: [...(sourceAnn.emotions||[])],
+    emotions2: [...(sourceAnn.emotions2||[])],
+    emotionLibre: sourceAnn.emotionLibre||'',
+    polarite: sourceAnn.polarite,
+    intensite: sourceAnn.intensite,
+    modificateurs: [...(sourceAnn.modificateurs||[])],
+    comment: sourceAnn.comment||'',
+    pendingGroupId: groupId
+  };
+
+  document.getElementById('ann-panel-sel').textContent = '⋯ Sélectionnez le segment discontinu…';
+  document.getElementById('ann-comment').value = sourceAnn.comment||'';
+  annBuildChips();
+  // Pré-cocher les mêmes émotions
+  setTimeout(() => {
+    document.querySelectorAll('#ann-chips-emo .ann-chip').forEach(chip => {
+      const emo = ANN_EMO.find(e => chip.textContent.includes(e.label));
+      if (emo && annPanelState.emotions.includes(emo.id)) {
+        chip.classList.add('emo-on'); chip.style.background=emo.color; chip.style.color='#fff';
+      }
+    });
+    document.querySelectorAll('#ann-chips-pol .ann-chip').forEach(c => { if(c.textContent===sourceAnn.polarite) c.classList.add('on'); });
+    document.querySelectorAll('#ann-chips-int .ann-chip').forEach(c => { if(c.textContent===sourceAnn.intensite) c.classList.add('on'); });
+    document.querySelectorAll('#ann-chips-mod .ann-chip').forEach(c => { if((sourceAnn.modificateurs||[]).includes(c.textContent)) c.classList.add('on'); });
+  }, 20);
+  document.getElementById('ann-panel').classList.add('open');
+  // Attendre la sélection de l'utilisateur — la validation se déclenchera normalement
+  // mais il faut intercepter le click sur les mots pour mettre à jour wordIndices
+}
+
+function annDeleteAnnotation(ti, ai) {
+  annTurns[ti].annotations.splice(ai, 1);
+  annClosePanel();
+  annRenderTurns();
+  annSaveState();
+}
+
+function annEditAnnotation(ti, ai) {
+  const turn = annTurns[ti];
+  const ann = turn.annotations[ai];
+  if (!ann) return;
+
+  document.querySelectorAll('.ann-word.selected').forEach(w => w.classList.remove('selected'));
+  annCurrentSelection.turnIdx = ti;
+  ann.wordIndices.forEach(wi => {
+    const span = document.querySelector(`.ann-word[data-turn="${ti}"][data-word="${wi}"]`);
+    if (span) span.classList.add('selected');
+  });
+
+  const selectedSpans = [...document.querySelectorAll(`.ann-word[data-turn="${ti}"].selected`)];
+  annOpenPanel(ti, selectedSpans);
+  annPanelState.editingIndex = ai;
+
+  setTimeout(() => {
+    annPanelState.emotions      = [...(ann.emotions||[])];
+    annPanelState.emotions2     = [...(ann.emotions2||[])];
+    annPanelState.emotionLibre  = ann.emotionLibre||'';
+    annPanelState.polarite      = ann.polarite;
+    annPanelState.intensite     = ann.intensite;
+    annPanelState.modificateurs = [...(ann.modificateurs||[])];
+
+    // ── Roue : recocher émotions primaires (dans ann.emotions)
+    // Ouvrir la Roue si des émotions primaires ou secondaires existent
+    if ((ann.emotions||[]).length > 0 || (ann.emotions2||[]).length > 0) {
+      annToggleSubSection('roue');
+      // Laisser le DOM se construire
+      setTimeout(() => {
+        // Primaires (dans la Roue, bouton central coloré)
+        document.querySelectorAll('#ann-sub-roue .ann-chip').forEach(chip => {
+          // Chercher si ce chip correspond à une émotion primaire
+          const emo = ANN_EMO.find(e => e.label === chip.textContent.trim());
+          if (emo && (ann.emotions||[]).includes(emo.id)) {
+            chip.classList.add('emo-on');
+            chip.style.background  = emo.color;
+            chip.style.color       = '#fff';
+            chip.style.borderColor = emo.color;
+          }
+          // Secondaires (faibles/forts dans la Roue)
+          const secId = 'sec_' + chip.textContent.trim().toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s/g,'_');
+          if ((ann.emotions2||[]).includes(secId)) chip.classList.add('on');
+        });
+      }, 10);
+    }
+
+    // ── Dyades : recocher si des emotions2 sont des dyades
+    const dyadeLabels = ANN_DYADES.flat();
+    const hasDyades = (ann.emotions2||[]).some(id => {
+      const lbl = annEmo2Label(id);
+      return dyadeLabels.includes(lbl);
+    });
+    if (hasDyades) {
+      annToggleSubSection('dyades');
+      setTimeout(() => {
+        document.querySelectorAll('#ann-sub-dyades .ann-chip').forEach(chip => {
+          const secId = 'sec_' + chip.textContent.trim().toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s/g,'_');
+          if ((ann.emotions2||[]).includes(secId)) chip.classList.add('on');
+        });
+      }, 10);
+    }
+
+    // Saisie libre
+    const freeInput = document.getElementById('ann-emo-free');
+    if (freeInput) { freeInput.value = ann.emotionLibre||''; }
+
+    // Polarité, Intensité, Modificateurs
+    document.querySelectorAll('#ann-chips-pol .ann-chip').forEach(c => { if (c.textContent===ann.polarite) c.classList.add('on'); });
+    document.querySelectorAll('#ann-chips-int .ann-chip').forEach(c => { if (c.textContent===ann.intensite) c.classList.add('on'); });
+    document.querySelectorAll('#ann-chips-mod .ann-chip').forEach(c => { if ((ann.modificateurs||[]).includes(c.textContent)) c.classList.add('on'); });
+
+    // Commentaire
+    const commentEl = document.getElementById('ann-comment');
+    if (commentEl) commentEl.value = ann.comment||'';
+    annPanelState.comment = ann.comment||'';
+  }, 20);
+
+  annRenderTurns();
+  annCurrentSelection.turnIdx = ti;
+  ann.wordIndices.forEach(wi => {
+    const span = document.querySelector(`.ann-word[data-turn="${ti}"][data-word="${wi}"]`);
+    if (span) span.classList.add('selected');
+  });
+  annColorSelectionSpaces(ti);
+}
+
+function annColorSelectionSpaces(ti) {
+  const selectedIndices = new Set(
+    [...document.querySelectorAll(`.ann-word[data-turn="${ti}"].selected`)]
+      .map(w => parseInt(w.dataset.word))
+  );
+  document.querySelectorAll(`.ann-space[data-turn="${ti}"]`).forEach(sp => {
+    const before = parseInt(sp.dataset.before);
+    const after  = parseInt(sp.dataset.after);
+    // On colorie en bleu seulement si les deux voisins sont sélectionnés
+    // On ne réinitialise jamais : les couleurs d'annotation restent intactes
+    if (selectedIndices.has(before) && selectedIndices.has(after)) {
+      sp.style.background = '#BFD9F7';
+    }
+  });
+}
+
+function annHexAlpha(hex, alpha) {
+  // Convertit un hex 3 ou 6 chars en rgba
+  const h = hex.replace('#', '');
+  const full = h.length === 3 ? h.split('').map(c=>c+c).join('') : h;
+  const r = parseInt(full.slice(0,2),16);
+  const g = parseInt(full.slice(2,4),16);
+  const b = parseInt(full.slice(4,6),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function annGetAnnotationColor(ann) {
+  // Chercher d'abord dans les émotions primaires (ANN_EMO)
+  if (ann.emotions && ann.emotions[0]) {
+    const found = ANN_EMO.find(e => e.id === ann.emotions[0]);
+    if (found) return found.color;
+  }
+  // Chercher dans les émotions de la Roue (emotions2 → axis color via ANN_ROUE)
+  if (ann.emotions2 && ann.emotions2[0]) {
+    const id = ann.emotions2[0].replace(/^sec_/, '');
+    for (const row of ANN_ROUE) {
+      const normalize = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s/g,'_');
+      if (normalize(row.weak) === id || normalize(row.strong) === id) return row.basic.color;
+    }
+  }
+  return '#888888';
+}
+
+function annRefreshWordHighlights() {
+  annTurns.forEach((turn, ti) => {
+    turn.annotations.forEach(ann => {
+      const color = annGetAnnotationColor(ann);
+      const indices = new Set(ann.wordIndices);
+      ann.wordIndices.forEach(wi => {
+        const span = document.querySelector(`.ann-word[data-turn="${ti}"][data-word="${wi}"]`);
+        if (span) {
+          span.style.background   = annHexAlpha(color, 0.2);
+          span.style.borderBottom = `2px solid ${color}`;
+        }
+      });
+      document.querySelectorAll(`.ann-space[data-turn="${ti}"]`).forEach(sp => {
+        const before = parseInt(sp.dataset.before);
+        const after  = parseInt(sp.dataset.after);
+        if (indices.has(before) && indices.has(after))
+          sp.style.background = annHexAlpha(color, 0.2);
+      });
+    });
+  });
+}
+
+function annToggleNoEmotion(ti, btn) {
+  const turn = annTurns[ti];
+  if (!turn.noEmotion && turn.annotations.length > 0) {
+    const ok = confirm(
+      `Ce tour contient ${turn.annotations.length} annotation(s) déjà validée(s) pour ce passage.\n\n` +
+      `Activer « Absence d'émotion » supprimera ces annotations. Confirmer ?`
+    );
+    if (!ok) return;
+    turn.annotations = [];
+  }
+  turn.noEmotion = !turn.noEmotion;
+  btn.classList.toggle('active', turn.noEmotion);
+  // Griser / dégriser le texte du tour
+  const textDiv = document.querySelector(`.ann-turn[data-turn="${ti}"] .ann-text`);
+  if (textDiv) textDiv.style.opacity = turn.noEmotion ? '.4' : '1';
+
+  if (turn.noEmotion) {
+    document.querySelectorAll(`.ann-word[data-turn="${ti}"]`).forEach(w => w.classList.remove('selected'));
+    if (annPanelState.turnIdx === ti) annClosePanel();
+    annRenderTurns();
+  }
+  annSaveState();
+}
+
+function annReset() {
+  const hasAnnotations = annTurns.some(t => t.annotations.length > 0 || t.noEmotion);
+  if (hasAnnotations) {
+    const choice = confirm(
+      'Des annotations sont en cours sur ce texte.\n\n' +
+      'Cliquez sur OK pour exporter les annotations avant de continuer,\n' +
+      'ou sur Annuler pour charger un autre texte sans enregistrer.'
+    );
+    if (choice) { annExport(); return; }
+  }
+  annDoClear();
+}
+
+function annDoClear() {
+  annTurns = [];
+  annCurrentSelection = { turnIdx: null };
+  annAnnotationMode = null;
+  annClosePanel();
+  document.getElementById('ann-workspace').style.display = 'none';
+  document.getElementById('ann-import-zone').style.display = 'block';
+  document.getElementById('ann-raw-input').value = '';
+  document.getElementById('ann-load-status').textContent = '';
+  const fi = document.getElementById('ann-file-input');
+  if (fi) fi.value = '';
+  try { localStorage.removeItem('ariane_ann_turns'); localStorage.removeItem('ariane_ann_raw'); } catch(e) {}
+  const fab = document.getElementById('ann-export-fab');
+  if (fab) fab.classList.remove('visible');
+}
+
+function annExport() {
+  const annotateur = (prompt('Initiales ou identifiant de l\'annotateur\n(laisser vide pour exporter sans identifiant) :') || '').trim();
+  const out = {
+    date: new Date().toISOString(),
+    annotateur,
+    protocole: {
+      contexte_annotation: 'tour_courant + tour_precedent',
+      note: 'Le tour suivant peut guider l\'annotateur humain mais est exclu des features d\'entraînement pour préserver le réalisme de la prédiction en temps réel.'
+    },
+    tours: annTurns.map((t, i) => ({
+      index: i,
+      locuteur: t.speaker,
+      texte: t.text,
+      absence_emotion: t.noEmotion,
+      annotations: t.annotations
+    }))
+  };
+  const slug = annotateur ? `_${annotateur.replace(/\s+/g,'_')}` : '';
+  const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `annotations_${new Date().toISOString().slice(0,10)}${slug}.json`;
+  a.click();
+}
+
+// ══════════════════════════════════════════
+//  GESTION DES ANNOTATIONS
+// ══════════════════════════════════════════
+
+let gestFiles = [];
+let gestLastScores = null;
+
+function gestExportScores() {
+  if (!gestLastScores) return;
+  const blob = new Blob([JSON.stringify(gestLastScores, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `scores_accord_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+
+function gestLoadJSON(input) {
+  const files = [...input.files];
+  if (!files.length) return;
+  let loaded = 0;
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = JSON.parse(e.target.result);
+        const idx = gestFiles.findIndex(f => f.name === file.name);
+        if (idx >= 0) gestFiles[idx] = { name: file.name, data };
+        else gestFiles.push({ name: file.name, data });
+      } catch(err) { alert('Erreur JSON : ' + file.name + '\n' + err.message); }
+      if (++loaded === files.length) gestRenderFiles();
+    };
+    reader.readAsText(file);
+  });
+  input.value = '';
+}
+
+function gestRenderFiles() {
+  const list  = document.getElementById('gest-files-list');
+  const items = document.getElementById('gest-files-items');
+  const btn   = document.getElementById('gest-calc-btn');
+  if (!list || !items) return;
+  list.style.display = gestFiles.length ? 'block' : 'none';
+  items.innerHTML = '';
+  gestFiles.forEach((f, i) => {
+    const ann    = f.data.annotateur || '—';
+    const nbAnn  = (f.data.tours||[]).reduce((s,t)=>s+(t.annotations||[]).length,0);
+    const row    = document.createElement('div');
+    row.style.cssText = 'background:var(--bg);border-radius:6px;padding:6px 8px;font-size:11px;display:flex;align-items:center;gap:6px;';
+    const info   = document.createElement('div');
+    info.style.flex = '1';
+    info.innerHTML = '<div style="font-weight:500;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + f.name + '</div>' +
+      '<div style="color:var(--t3);">' + ann + ' · ' + nbAnn + ' ann.</div>';
+    const del    = document.createElement('button');
+    del.className = 'eb';
+    del.style.cssText = 'font-size:10px;padding:1px 6px;flex-shrink:0;';
+    del.textContent = '✕';
+    del.onclick = () => { gestFiles.splice(i,1); gestRenderFiles(); };
+    row.appendChild(info); row.appendChild(del);
+    items.appendChild(row);
+  });
+  const enough = gestFiles.length >= 2;
+  if (btn) {
+    btn.style.opacity    = enough ? '1'          : '.4';
+    btn.style.cursor     = enough ? 'pointer'    : 'not-allowed';
+    btn.style.background = enough ? 'var(--acc)' : 'var(--bg)';
+    btn.style.color      = enough ? '#fff'       : 'var(--t2)';
+    btn.style.borderColor= enough ? 'var(--acc)' : 'var(--bd)';
+  }
+  if (enough) gestCalcClick();
+}
+
+// ── Utilitaires accord ──
+
+function gestGetVector(fData, tourTexte) {
+  const t = (fData.tours||[]).find(t=>(t.texte||t.text||'')===tourTexte);
+  if (!t || t.absence_emotion) return [];
+  const s = new Set();
+  (t.annotations||[]).forEach(a=>{
+    (a.emotions||[]).forEach(e=>s.add(e));
+    (a.emotions2||[]).forEach(e=>s.add(e));
+  });
+  return [...s];
+}
+
+function gestCohenKappa(v1, v2, cats) {
+  const n = v1.length;
+  if (!n || !cats.length) return null;
+  let po=0, pe=0;
+  cats.forEach(c=>{
+    const a1=v1.map(v=>v.includes(c)?1:0), a2=v2.map(v=>v.includes(c)?1:0);
+    po += a1.filter((x,i)=>x===a2[i]).length/n;
+    const p1=a1.reduce((s,x)=>s+x,0)/n, p2=a2.reduce((s,x)=>s+x,0)/n;
+    pe += p1*p2+(1-p1)*(1-p2);
+  });
+  po/=cats.length; pe/=cats.length;
+  return pe>=1 ? 1 : (po-pe)/(1-pe);
+}
+
+function gestKrippendorffAlpha(vectors, cats) {
+  // Alpha nominal (multi-annotateurs, binaire par catégorie)
+  const n = vectors[0].length; // nb unités
+  const k = vectors.length;    // nb annotateurs
+  if (n < 2 || k < 2 || !cats.length) return null;
+  let doSum=0, deSum=0;
+  cats.forEach(cat => {
+    // Pour chaque unité, compter votes 0/1
+    let do_cat=0, de_cat=0;
+    const marginals = [];
+    for (let u=0; u<n; u++) {
+      const votes = vectors.map(v=>v[u].includes(cat)?1:0);
+      const n1 = votes.reduce((s,x)=>s+x,0);
+      const n0 = k - n1;
+      do_cat += n0*n1; // paires en désaccord dans cette unité
+      marginals.push({n0,n1});
+    }
+    do_cat /= (n*(k-1)); // normaliser
+    const tot1 = marginals.reduce((s,m)=>s+m.n1,0);
+    const tot0 = marginals.reduce((s,m)=>s+m.n0,0);
+    const totAll = tot0+tot1;
+    de_cat = totAll>0 ? (tot0*tot1)/(totAll*(totAll-1)) : 0;
+    doSum += do_cat;
+    deSum += de_cat * n;
+  });
+  doSum /= cats.length;
+  deSum /= cats.length;
+  if (deSum === 0) return 1;
+  return 1 - doSum/deSum;
+}
+
+function gestScoreLabel(k) {
+  if (k === null || k === undefined) return '—';
+  if (k < 0)    return 'Désaccord';
+  if (k < 0.20) return 'Très faible';
+  if (k < 0.40) return 'Faible';
+  if (k < 0.60) return 'Modéré';
+  if (k < 0.80) return 'Bon';
+  return 'Excellent';
+}
+
+function gestScoreColor(k) {
+  if (k === null) return '#888';
+  if (k < 0.2)   return '#C0392B';
+  if (k < 0.4)   return '#E67E22';
+  if (k < 0.6)   return '#F1C40F';
+  if (k < 0.8)   return '#27AE60';
+  return '#1ABC9C';
+}
+
+// ── Calcul et affichage ──
+
+function gestCalcClick() {
+  try {
+    if (gestFiles.length < 2) { alert('Chargez au moins 2 fichiers.'); return; }
+    const comp = document.getElementById('gest-comparison');
+    comp.style.display = 'block';
+    comp.innerHTML = '';
+
+    const annotateurs = gestFiles.map(f=>f.data.annotateur||f.name);
+    const refTours = (gestFiles[0].data.tours||[]).filter(t=>(t.locuteur||t.speaker||'')==='patient');
+    if (!refTours.length) { comp.innerHTML='<p style="color:var(--t3)">Aucun tour patient trouvé.</p>'; return; }
+    const tourTextes = refTours.map(t=>t.texte||t.text||'');
+
+    // Catégories communes
+    const catSet = new Set();
+    gestFiles.forEach(f=>(f.data.tours||[]).forEach(t=>(t.annotations||[]).forEach(a=>{
+      (a.emotions||[]).forEach(e=>catSet.add(e));
+      (a.emotions2||[]).forEach(e=>catSet.add(e));
+    })));
+    const cats = [...catSet];
+
+    // Vecteurs
+    const vectors = gestFiles.map(f=>tourTextes.map(tx=>gestGetVector(f.data,tx)));
+
+    // ── Scores globaux ──
+    const scoresDiv = document.createElement('div');
+    scoresDiv.style.marginBottom='20px';
+
+    const t1 = document.createElement('div');
+    t1.className='ct'; t1.style.marginBottom='8px';
+    t1.textContent = gestFiles.length===2 ? "Cohen's Kappa" : "Krippendorff's Alpha";
+    scoresDiv.appendChild(t1);
+
+    const meta = document.createElement('div');
+    meta.style.cssText='font-size:11px;color:var(--t3);margin-bottom:12px;';
+    meta.textContent = tourTextes.length+' tours · '+cats.length+' catégories d\u2019émotions';
+    scoresDiv.appendChild(meta);
+
+    const cardsRow = document.createElement('div');
+    cardsRow.style.cssText='display:flex;flex-wrap:wrap;gap:12px;margin-bottom:4px;';
+
+    if (gestFiles.length===2) {
+      // Cohen's Kappa (paire unique)
+      const k = gestCohenKappa(vectors[0],vectors[1],cats);
+      const col = gestScoreColor(k);
+      const card = document.createElement('div');
+      card.style.cssText='flex:1;min-width:180px;background:var(--bg);border-radius:10px;padding:14px 18px;border-left:4px solid '+col+';';
+      card.innerHTML='<div style="font-size:11px;color:var(--t3);margin-bottom:4px;">'+annotateurs[0]+' vs '+annotateurs[1]+'</div>'+
+        '<div style="font-size:28px;font-weight:700;color:'+col+';font-family:IBM Plex Mono,monospace;">'+(k!==null?k.toFixed(3):'—')+'</div>'+
+        '<div style="font-size:11.5px;color:var(--t2);margin-top:4px;">Cohen\u2019s \u03ba \u2014 '+gestScoreLabel(k)+'</div>';
+      cardsRow.appendChild(card);
+    } else {
+      // Krippendorff's Alpha (multi)
+      const alpha = gestKrippendorffAlpha(vectors,cats);
+      const col = gestScoreColor(alpha);
+      const card = document.createElement('div');
+      card.style.cssText='flex:1;min-width:180px;background:var(--bg);border-radius:10px;padding:14px 18px;border-left:4px solid '+col+';';
+      card.innerHTML='<div style="font-size:11px;color:var(--t3);margin-bottom:4px;">'+annotateurs.join(' · ')+'</div>'+
+        '<div style="font-size:28px;font-weight:700;color:'+col+';font-family:IBM Plex Mono,monospace;">'+(alpha!==null?alpha.toFixed(3):'—')+'</div>'+
+        '<div style="font-size:11.5px;color:var(--t2);margin-top:4px;">Krippendorff\u2019s \u03b1 \u2014 '+gestScoreLabel(alpha)+'</div>';
+      cardsRow.appendChild(card);
+      // Aussi les Kappa par paire
+      for (let i=0;i<gestFiles.length;i++) for(let j=i+1;j<gestFiles.length;j++){
+        const k=gestCohenKappa(vectors[i],vectors[j],cats);
+        const c=gestScoreColor(k);
+        const kc=document.createElement('div');
+        kc.style.cssText='background:var(--bg);border-radius:10px;padding:10px 14px;border-left:3px solid '+c+';font-size:11.5px;';
+        kc.innerHTML='<div style="color:var(--t3);margin-bottom:2px;">'+annotateurs[i]+' vs '+annotateurs[j]+'</div>'+
+          '<div style="font-weight:700;color:'+c+';font-family:IBM Plex Mono,monospace;">'+(k!==null?k.toFixed(3):'—')+'</div>'+
+          '<div style="color:var(--t2);">\u03ba \u2014 '+gestScoreLabel(k)+'</div>';
+        cardsRow.appendChild(kc);
+      }
+    }
+    scoresDiv.appendChild(cardsRow);
+    comp.appendChild(scoresDiv);
+
+    // ── Heatmap ──
+    gestRenderHeatmap(comp, tourTextes, cats, vectors, annotateurs);
+
+    // ── Comparaison tour par tour ──
+    const sep=document.createElement('hr');
+    sep.style.cssText='border:none;border-top:1px solid var(--bd);margin:20px 0;';
+    comp.appendChild(sep);
+    gestAppendTourComparison(comp, tourTextes);
+
+    // Sauvegarder les scores pour export
+    const kappas = {};
+    for (let i=0;i<gestFiles.length;i++) for(let j=i+1;j<gestFiles.length;j++){
+      const k=gestCohenKappa(vectors[i],vectors[j],cats);
+      kappas[annotateurs[i]+' vs '+annotateurs[j]] = k!==null ? parseFloat(k.toFixed(3)) : null;
+    }
+    gestLastScores = {
+      date: new Date().toISOString(),
+      annotateurs,
+      n_tours: tourTextes.length,
+      n_categories: cats.length,
+      categories: cats.map(c=>{ const e=ANN_EMO.find(x=>x.id===c); return e?e.label:annEmo2Label(c)||c; }),
+      kappa: gestFiles.length===2 ? (Object.values(kappas)[0]) : kappas,
+      alpha: gestFiles.length>=3 ? gestKrippendorffAlpha(vectors,cats) : null,
+      interpretation: gestScoreLabel(gestFiles.length===2 ? Object.values(kappas)[0] : gestKrippendorffAlpha(vectors,cats))
+    };
+
+    // Afficher bouton export
+    const exportBtn = document.getElementById('gest-export-btn');
+    if (exportBtn) exportBtn.style.display = 'block';
+
+    document.getElementById('main').scrollTop=0;
+
+  } catch(e){ alert('Erreur: '+e.message+'\n'+e.stack); }
+}
+
+function gestRenderHeatmap(comp, tourTextes, cats, vectors, annotateurs) {
+  if (!cats.length) return;
+  const wrap=document.createElement('div');
+  wrap.style.marginBottom='20px';
+  const t=document.createElement('div');
+  t.className='ct'; t.style.cssText='margin-bottom:4px;';
+  t.textContent='Heatmap des désaccords';
+  wrap.appendChild(t);
+  const sub=document.createElement('div');
+  sub.style.cssText='font-size:11px;color:var(--t3);margin-bottom:12px;';
+  sub.textContent='Vert = accord total · Rouge = désaccord total · par tour (ligne) × catégorie (colonne)';
+  wrap.appendChild(sub);
+
+  // Catégorie labels (tronqués)
+  const catLabels = cats.map(c=>{ const e=ANN_EMO.find(x=>x.id===c); return e?e.label:annEmo2Label(c)||c; });
+
+  const grid=document.createElement('div');
+  grid.style.cssText='overflow-x:auto;';
+  const table=document.createElement('table');
+  table.style.cssText='border-collapse:collapse;font-size:10px;';
+
+  // Header
+  const thead=document.createElement('thead');
+  const hrow=document.createElement('tr');
+  const th0=document.createElement('th');
+  th0.style.cssText='padding:4px 6px;text-align:left;color:var(--t3);font-weight:400;min-width:40px;';
+  th0.textContent='Tour';
+  hrow.appendChild(th0);
+  catLabels.forEach(label=>{
+    const th=document.createElement('th');
+    th.style.cssText='padding:4px 3px;color:var(--t3);font-weight:400;white-space:nowrap;max-width:60px;overflow:hidden;text-overflow:ellipsis;';
+    th.title=label;
+    th.textContent=label.length>8?label.slice(0,7)+'…':label;
+    hrow.appendChild(th);
+  });
+  thead.appendChild(hrow);
+  table.appendChild(thead);
+
+  // Body
+  const tbody=document.createElement('tbody');
+  tourTextes.forEach((tx,ti)=>{
+    const tr=document.createElement('tr');
+    const td0=document.createElement('td');
+    td0.style.cssText='padding:3px 6px;color:var(--t3);font-size:10px;white-space:nowrap;';
+    td0.textContent='P'+(ti+1);
+    tr.appendChild(td0);
+    cats.forEach(cat=>{
+      const votes=vectors.map(v=>v[ti].includes(cat)?1:0);
+      const agree=votes.reduce((s,x)=>s+x,0);
+      // 0=tous absents, k=tous présents → accord ; sinon désaccord partiel
+      const k=vectors.length;
+      const accordLevel = agree===0||agree===k ? 1 : 1-(Math.min(agree,k-agree)/(k/2));
+      const r=Math.round(255*(1-accordLevel)), g=Math.round(180*accordLevel);
+      const td=document.createElement('td');
+      td.style.cssText='padding:3px;';
+      const cell=document.createElement('div');
+      cell.style.cssText='width:28px;height:20px;border-radius:3px;background:rgb('+r+','+g+',80);';
+      cell.title=catLabels[cats.indexOf(cat)]+' — Tour P'+(ti+1)+' — '+agree+'/'+k+' annotateur(s)';
+      td.appendChild(cell);
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  grid.appendChild(table);
+  wrap.appendChild(grid);
+  comp.appendChild(wrap);
+}
+
+function gestAppendTourComparison(comp, tourTextes) {
+  const annotateurs = gestFiles.map(f=>f.data.annotateur||f.name);
+  const t=document.createElement('div');
+  t.className='ct'; t.style.marginBottom='12px';
+  t.textContent='Comparaison tour par tour';
+  comp.appendChild(t);
+  const allRef=gestFiles[0].data.tours||[];
+  tourTextes.forEach((texte,idx)=>{
+    const refIdx=allRef.findIndex(t=>(t.texte||t.text||'')===texte);
+    const card=document.createElement('div');
+    card.className='cc'; card.style.cssText='margin-bottom:12px;padding:14px 18px;';
+    const txt=document.createElement('div');
+    txt.style.cssText='font-size:12.5px;color:var(--t1);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--bd);line-height:1.6;';
+    txt.innerHTML='<span style="font-size:10px;font-weight:500;color:var(--pat);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px;">Tour patient '+(idx+1)+'</span>'+texte;
+    card.appendChild(txt);
+    const cols=document.createElement('div');
+    cols.style.cssText='display:grid;grid-template-columns:repeat('+gestFiles.length+',1fr);gap:14px;';
+    gestFiles.forEach((f,fi)=>{
+      const fTours=f.data.tours||[];
+      const fTour=fTours[refIdx]||fTours.find(t=>(t.texte||t.text||'')===texte);
+      const anns=fTour?(fTour.annotations||[]):[];
+      const noEmo=fTour?fTour.absence_emotion:false;
+      const col=document.createElement('div');
+      const head=document.createElement('div');
+      head.style.cssText='font-weight:500;color:var(--acc);margin-bottom:8px;font-size:11px;text-transform:uppercase;';
+      head.textContent=annotateurs[fi];
+      col.appendChild(head);
+      if(noEmo){
+        col.innerHTML+='<span style="font-size:11px;color:var(--t3);font-style:italic;">∅ Absence d’émotion</span>';
+      } else if(!anns.length){
+        col.innerHTML+='<span style="font-size:11px;color:var(--t3);font-style:italic;">— Non annoté</span>';
+      } else {
+        anns.forEach(ann=>{
+          const emos=[...(ann.emotions||[]).map(id=>{const e=ANN_EMO.find(x=>x.id===id);return e?e.label:id;}),
+            ...(ann.emotions2||[]).map(id=>annEmo2Label(id)),ann.emotionLibre||''].filter(Boolean);
+          const b=document.createElement('div');
+          b.style.cssText='background:var(--bg);border-radius:6px;padding:6px 9px;margin-bottom:6px;border-left:3px solid var(--pat);font-size:12px;';
+          b.innerHTML='<div style="font-weight:500;color:var(--t1);">'+(emos.join(', ')||'—')+'</div>'+
+            '<div style="font-size:10.5px;color:var(--t3);margin-top:2px;">« '+(ann.text||'')+' »</div>'+
+            (ann.polarite?'<div style="font-size:10px;color:var(--t3);">Polarité: '+ann.polarite+'</div>':'')+
+            (ann.intensite?'<div style="font-size:10px;color:var(--t3);">Intensité: '+ann.intensite+'</div>':'');
+          col.appendChild(b);
+        });
+      }
+      cols.appendChild(col);
+    });
+    card.appendChild(cols);
+    comp.appendChild(card);
+  });
+}
+</script>
