@@ -1047,7 +1047,7 @@ input[type=range].plut-emo-sl::-moz-range-track { background:transparent; }
 </div>
 
 <!-- ─── PANNEAU FLOTTANT GESTION ─── -->
-<div id="gest-panel" style="display:none;position:fixed;right:0;top:0;width:280px;height:100vh;background:var(--w);border-left:1.5px solid var(--bd);box-shadow:-4px 0 20px rgba(0,0,0,.08);z-index:150;display:flex;flex-direction:column;overflow-y:auto;padding:20px 16px;box-sizing:border-box;">
+<div id="gest-panel" style="display:none;position:fixed;right:0;top:0;width:280px;height:100vh;background:var(--w);border-left:1.5px solid var(--bd);box-shadow:-4px 0 20px rgba(0,0,0,.08);z-index:150;flex-direction:column;overflow-y:auto;padding:20px 16px;box-sizing:border-box;">
 
   <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--t3);margin-bottom:16px;">Gestion des annotations</div>
 
@@ -2302,7 +2302,7 @@ const ANN_EMO = [
 ];
 const ANN_POL = ['Normale','Positive','Négative','Indéterminée'];
 const ANN_INT = ['Normale','Faible','Forte','Indéterminée'];
-const ANN_MOD = ['Négation','Incertitude / Conditionnel','Ironie / Sarcasme'];
+const ANN_MOD = ['Négation','Incertitude / Conditionnel'];
 const ANN_ROLE_OPTS = [
   { value:'Locuteur',        label:'Loc.'       },
   { value:'Interlocuteur',   label:'Interloc.'  },
@@ -2345,6 +2345,7 @@ function annRestoreState() {
         annSetupMouseSelection();
         const fab = document.getElementById('ann-export-fab');
         if (fab) fab.classList.add('visible');
+        navigate('annotation');
       }
     }
   } catch(e) {}
@@ -3230,6 +3231,25 @@ function annBuildRoue(containerId) {
 
     div.appendChild(rowDiv);
   });
+
+  // Bouton "Indéterminée" sous la roue
+  const btnIndet = document.createElement('span');
+  const indetOn = annPanelState.emotions.includes('indeterminee');
+  btnIndet.className = 'ann-chip' + (indetOn ? ' emo-on' : '');
+  btnIndet.textContent = 'Indéterminée';
+  if (indetOn) {
+    btnIndet.style.background = '#9E9E9E';
+    btnIndet.style.color = '#fff';
+    btnIndet.style.borderColor = '#9E9E9E';
+  }
+  btnIndet.style.marginTop = '6px';
+  btnIndet.onclick = () => {
+    const on = !annPanelState.emotions.includes('indeterminee');
+    if (on) annPanelState.emotions.push('indeterminee');
+    else annPanelState.emotions = annPanelState.emotions.filter(x => x !== 'indeterminee');
+    annBuildRoue(containerId);
+  };
+  div.appendChild(btnIndet);
 }
 
 function annBuildDyades(containerId) {
@@ -3243,6 +3263,25 @@ function annBuildDyades(containerId) {
     group.forEach(label => rowDiv.appendChild(annMakeSecondaryChip(label)));
     div.appendChild(rowDiv);
   });
+
+  // Bouton "Indéterminée" sous les dyades
+  const btnIndet = document.createElement('span');
+  const indetOn = annPanelState.emotions.includes('indeterminee');
+  btnIndet.className = 'ann-chip' + (indetOn ? ' emo-on' : '');
+  btnIndet.textContent = 'Indéterminée';
+  if (indetOn) {
+    btnIndet.style.background = '#9E9E9E';
+    btnIndet.style.color = '#fff';
+    btnIndet.style.borderColor = '#9E9E9E';
+  }
+  btnIndet.style.marginTop = '6px';
+  btnIndet.onclick = () => {
+    const on = !annPanelState.emotions.includes('indeterminee');
+    if (on) annPanelState.emotions.push('indeterminee');
+    else annPanelState.emotions = annPanelState.emotions.filter(x => x !== 'indeterminee');
+    annBuildDyades(containerId);
+  };
+  div.appendChild(btnIndet);
 }
 
 function annOpenSubSection(which) {
