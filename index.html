@@ -2657,6 +2657,8 @@ function annOpenPanel(ti, selectedSpans) {
 
   document.getElementById('ann-panel-sel').textContent = displayText;
   document.getElementById('ann-comment').value = '';
+  const freeInputClear = document.getElementById('ann-emo-free');
+  if (freeInputClear) freeInputClear.value = '';
   document.getElementById('ann-emo-secondary') && (document.getElementById('ann-emo-secondary').style.display = 'none');
   document.getElementById('ann-emo-plus-btn') && (document.getElementById('ann-emo-plus-btn').textContent = '+ Plus');
   document.getElementById('ann-emo-required') && (document.getElementById('ann-emo-required').style.display = 'none');
@@ -3501,11 +3503,14 @@ function annEditAnnotation(ti, ai) {
     annPanelState.polarite      = ann.polarite;
     annPanelState.intensite     = ann.intensite;
     annPanelState.modificateurs = [...(ann.modificateurs||[])];
+    annPanelState.experient     = ann.experient || null;
+    annPanelState.cible         = ann.cible     || null;
+    annPanelState.source        = ann.source    || null;
 
     // ── Roue : recocher émotions primaires (dans ann.emotions)
     // Ouvrir la Roue si des émotions primaires ou secondaires existent
     if ((ann.emotions||[]).length > 0 || (ann.emotions2||[]).length > 0) {
-      annToggleSubSection('roue');
+      annOpenSubSection('roue');
       // Laisser le DOM se construire
       setTimeout(() => {
         // Primaires (dans la Roue, bouton central coloré)
@@ -3524,6 +3529,9 @@ function annEditAnnotation(ti, ai) {
           if ((ann.emotions2||[]).includes(secId)) chip.classList.add('on');
         });
       }, 10);
+    } else {
+      // Pas d'émotions primaires/secondaires : ouvrir la Roue quand même pour faciliter l'édition
+      annOpenSubSection('roue');
     }
 
     // ── Dyades : recocher si des emotions2 sont des dyades
@@ -3556,6 +3564,9 @@ function annEditAnnotation(ti, ai) {
     const commentEl = document.getElementById('ann-comment');
     if (commentEl) commentEl.value = ann.comment||'';
     annPanelState.comment = ann.comment||'';
+
+    // Reconstruire le bloc Rôles avec les valeurs restaurées
+    annBuildRolesBlock('ann-roles-free');
   }, 20);
 
   annRenderTurns();
