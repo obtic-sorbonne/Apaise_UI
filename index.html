@@ -406,7 +406,7 @@ input[type=range].plut-emo-sl::-moz-range-track { background:transparent; }
 .ann-badge{font-size:10.5px;padding:2px 8px;border-radius:100px;background:var(--pat-l);color:var(--pat);border:1px solid #b3d9ca;}
 
 /* panneau annotation flottant */
-.ann-panel{position:fixed;right:0;top:0;width:340px;background:var(--w);border-left:1.5px solid var(--acc);box-shadow:-6px 0 28px rgba(0,0,0,.10);z-index:200;overflow:hidden;display:none;height:100vh;}
+.ann-panel{position:fixed;right:0;top:0;width:450px;background:var(--w);border-left:1.5px solid var(--acc);box-shadow:-6px 0 28px rgba(0,0,0,.10);z-index:200;overflow:hidden;display:none;height:100vh;}
 .ann-panel.open{display:flex;flex-direction:column;}
 .ann-panel-hd{background:var(--acc);color:#fff;padding:11px 16px;display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:500;flex-shrink:0;}
 .ann-panel-hd button{background:none;border:none;color:#fff;cursor:pointer;font-size:16px;line-height:1;opacity:.8;}
@@ -1990,7 +1990,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     {n:'fear',        lb:'Peur',         a:0,   c:'#3B9E5B', s:0.10, sub:['Appréhension','Peur','Terreur']},
     {n:'surprise',    lb:'Surprise',     a:45,  c:'#24BAA4', s:0.70, sub:['Distraction','Surprise','Étonnement']},
     {n:'sadness',     lb:'Tristesse',    a:90,  c:'#2F7FBA', s:0.10, sub:['Pensivité','Tristesse','Chagrin']},
-    {n:'disgust',     lb:'Dégoût',       a:135, c:'#8B5EA9', s:0.50, sub:['Ennui','Dégoût','Répulsion']},
+    {n:'disgust',     lb:'Dégoût',       a:135, c:'#8B5EA9', s:0.50, sub:['Ennui','Dégoût','Aversion']},
     {n:'anger',       lb:'Colère',       a:180, c:'#C94444', s:0.40, sub:['Contrariété','Colère','Rage']},
     {n:'anticipation',lb:'Anticipation', a:225, c:'#E87C35', s:0.60, sub:['Intérêt','Anticipation','Vigilance']},
   ];
@@ -3010,20 +3010,20 @@ const ANN_ROUE = [
   { weak:'Sérénité',    basic:{id:'joie',        label:'Joie',         color:'#E6A817'}, strong:'Extase'          },
   { weak:'Acceptation', basic:{id:'confiance',    label:'Confiance',    color:'#27AE60'}, strong:'Admiration'      },
   { weak:'Appréhension',basic:{id:'peur',         label:'Peur',         color:'#7B5EA7'}, strong:'Terreur'         },
-  { weak:'Distraction', basic:{id:'surprise',     label:'Surprise',     color:'#16A085'}, strong:'Émerveillement'  },
-  { weak:'Mélancolie',  basic:{id:'tristesse',    label:'Tristesse',    color:'#4E72D6'}, strong:'Chagrin'         },
-  { weak:'Ennui',       basic:{id:'degout',       label:'Dégoût',       color:'#7F8C8D'}, strong:'Répulsion'       },
-  { weak:'Agacement',   basic:{id:'colere',       label:'Colère',       color:'#C0392B'}, strong:'Rage'            },
+  { weak:'Distraction', basic:{id:'surprise',     label:'Surprise',     color:'#16A085'}, strong:'Étonnement'      },
+  { weak:'Songerie',    basic:{id:'tristesse',    label:'Tristesse',    color:'#4E72D6'}, strong:'Chagrin'         },
+  { weak:'Ennui',       basic:{id:'degout',       label:'Dégoût',       color:'#7F8C8D'}, strong:'Aversion'        },
+  { weak:'Contrariété', basic:{id:'colere',       label:'Colère',       color:'#C0392B'}, strong:'Rage'            },
   { weak:'Intérêt',     basic:{id:'anticipation', label:'Anticipation', color:'#D35400'}, strong:'Vigilance'       },
 ];
 
 const ANN_DYADES = [
-  ['Amour','Soumission','Sentimentalisme','Domination','Fierté'],
-  ['Effroi','Anxiété','Désespoir','Honte'],
-  ['Mépris','Agressivité','Cynisme','Outrage','Envie','Remords'],
+  ['Amour','Sentimentalité','Fierté','Espoir','Optimisme','Allégresse'],
+  ['Soumission','Domination','Envie'],
+  ['Effroi','Anxiété','Désespoir','Pessimisme','Morbidité'],
+  ['Honte','Remords','Culpabilité'],
+  ['Indignation','Agressivité','Mépris','Cynisme'],
   ['Curiosité','Incrédulité','Désappointement'],
-  ['Optimisme','Espoir','Pessimisme'],
-  ['Morbidité','Culpabilité','Plaisir'],
 ];
 
 // Compatibilité : retrouver le label d'une émotion secondaire par son id
