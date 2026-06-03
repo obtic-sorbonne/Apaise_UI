@@ -155,7 +155,7 @@ mark.hl{background:#FEF3C7;color:#92400E;border-radius:2px;padding:0 1px;}
 .erow{display:flex;align-items:center;gap:5px;margin-bottom:7px;user-select:none;}
 .erow input{flex-shrink:0;cursor:pointer;accent-color:var(--acc);}
 .edot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-.enam{font-size:11.5px;color:var(--t1);flex-shrink:0;min-width:64px;}
+.enam{font-size:11.5px;color:var(--t1);flex-shrink:0;min-width:64px;font-weight:700;}
 .ebar{flex:1;height:6px;background:#F0EDE6;border-radius:100px;overflow:hidden;}
 .ebarfill{height:100%;border-radius:100px;}
 .eval{font-size:10.5px;font-family:'IBM Plex Mono',monospace;color:var(--t3);width:18px;text-align:right;flex-shrink:0;}
@@ -1013,14 +1013,14 @@ input[type=range].plut-emo-sl::-moz-range-track { background:transparent; }
       <div class="ann-section-title">Intensité</div>
       <div class="ann-chips" id="ann-chips-int"></div>
     </div>
-    <!-- Modificateurs -->
+    <!-- Modalisation -->
     <div class="ann-section">
-      <div class="ann-section-title">Modificateurs</div>
+      <div class="ann-section-title">Modalisation</div>
       <div class="ann-chips" id="ann-chips-mod"></div>
     </div>
     <!-- Rôles -->
     <div class="ann-section">
-      <div class="ann-section-title">Rôles émotionnels</div>
+      <div class="ann-section-title">Rôles sémantiques</div>
       <div id="ann-roles-free"></div>
     </div>
     <!-- Commentaire -->
@@ -1495,7 +1495,7 @@ function renderEmoProsBars(ent, allEmo, allPros){
       return `<div class="erow">
       <input type="checkbox" id="ecb-${e}" ${checked} onchange="toggleEmo('${e}',this.checked)">
       <span class="edot" style="background:${ec(e)}"></span>
-      <span class="enam">${e}</span>
+      <span class="enam" style="font-weight:700;">${e}</span>
       <div class="ebar"><div class="ebarfill" style="width:${Math.round(count/maxEc*100)}%;background:${ec(e)};"></div></div>
       <span class="eval">${count}</span>
     </div>`;}).join('');
@@ -3210,7 +3210,7 @@ function annBuildRoue(containerId) {
     const cb = document.createElement('span');
     cb.className = 'ann-chip' + (annPanelState.emotions.includes(row.basic.id) ? ' emo-on' : '');
     cb.textContent = row.basic.label;
-    cb.style.fontWeight = '';
+    cb.style.fontWeight = '700';
     if (annPanelState.emotions.includes(row.basic.id)) {
       cb.style.background = row.basic.color;
       cb.style.color = '#fff';
