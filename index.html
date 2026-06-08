@@ -2336,7 +2336,7 @@ function annRestoreState() {
         annTurns = parsed;
         const rawInput = document.getElementById('ann-raw-input');
         if (rawInput) rawInput.value = raw;
-        const patCount = parsed.filter(t=>t.speaker==='patient').length;
+        const patCount = parsed.filter(t=>t.locuteur==='patient').length;
         document.getElementById('ann-load-status').textContent = `✓ Session restaurée — ${parsed.length} tours (${patCount} patient)`;
         document.getElementById('ann-import-zone').style.display = 'none';
         document.getElementById('ann-workspace').style.display = 'block';
@@ -2416,18 +2416,18 @@ function annLoadFile(input) {
       // Chargement d'un fichier JSON déjà annoté
       try {
         const data = JSON.parse(content);
-        // Format attendu : { annotateur, tours: [{speaker, text, noEmotion, annotations},...] }
+        // Format attendu : { annotateur, tours: [{locuteur, texte, absence_emotion, annotations},...] }
         if (data.tours && Array.isArray(data.tours)) {
           annTurns = data.tours.map(t => ({
-            speaker:     t.speaker     || 'patient',
-            text:        t.texte || t.text || '',
+            locuteur:    t.locuteur || t.speaker || 'patient',
+            texte:       t.texte    || t.text    || '',
             noEmotion:   t.absence_emotion || t.noEmotion || false,
             annotations: t.annotations || []
           }));
-          const patCount = annTurns.filter(t => t.speaker === 'patient').length;
+          const patCount = annTurns.filter(t => t.locuteur === 'patient').length;
           // Reconstruire le texte brut pour la textarea
           const raw = annTurns.map(t =>
-            (t.speaker === 'patient' ? 'PATIENT: ' : 'PSYCHIATRE: ') + t.text
+            (t.locuteur === 'patient' ? 'PATIENT: ' : 'PSYCHIATRE: ') + t.texte
           ).join('\n');
           document.getElementById('ann-raw-input').value = raw;
           document.getElementById('ann-load-status').textContent = `✓ JSON chargé — ${annTurns.length} tours (${patCount} patient)`;
@@ -2460,13 +2460,13 @@ function annParse(raw) {
   annTurns = [];
   let patientCount = 0;
   for (const line of lines) {
-    let speaker = null, text = '';
+    let locuteur = null, texte = '';
     if (/^PATIENT\s*:/i.test(line)) {
-      speaker = 'patient'; text = line.replace(/^PATIENT\s*:\s*/i,'').trim(); patientCount++;
+      locuteur = 'patient'; texte = line.replace(/^PATIENT\s*:\s*/i,'').trim(); patientCount++;
     } else if (/^PSYCHIATRE\s*:/i.test(line)) {
-      speaker = 'psychiatre'; text = line.replace(/^PSYCHIATRE\s*:\s*/i,'').trim();
+      locuteur = 'psychiatre'; texte = line.replace(/^PSYCHIATRE\s*:\s*/i,'').trim();
     } else continue;
-    annTurns.push({ speaker, text, noEmotion: false, annotations: [] });
+    annTurns.push({ locuteur, texte, noEmotion: false, annotations: [] });
   }
   if (!annTurns.length) {
     document.getElementById('ann-load-status').textContent = '⚠ Aucun tour reconnu. Vérifiez le format.'; return;
@@ -2490,19 +2490,19 @@ function annRenderTurns() {
   container.innerHTML = '';
   annTurns.forEach((turn, ti) => {
     const div = document.createElement('div');
-    div.className = `ann-turn ann-${turn.speaker}`;
+    div.className = `ann-turn ann-${turn.locuteur}`;
     div.dataset.turn = ti;
 
     const spk = document.createElement('div');
-    spk.className = `ann-spk ann-${turn.speaker}`;
-    spk.textContent = turn.speaker === 'patient' ? '● Patient' : '● Psychiatre';
+    spk.className = `ann-spk ann-${turn.locuteur}`;
+    spk.textContent = turn.locuteur === 'patient' ? '● Patient' : '● Psychiatre';
     div.appendChild(spk);
 
     const textDiv = document.createElement('div');
     textDiv.className = 'ann-text';
 
-    if (turn.speaker === 'patient') {
-      const chunks = turn.text.split(/(\s+)/);
+    if (turn.locuteur === 'patient') {
+      const chunks = turn.texte.split(/(\s+)/);
       let wordIdx = 0;
       chunks.forEach(chunk => {
         if (/^\s+$/.test(chunk)) {
@@ -2524,12 +2524,12 @@ function annRenderTurns() {
         }
       });
     } else {
-      textDiv.textContent = turn.text;
+      textDiv.textContent = turn.texte;
       textDiv.style.opacity = '.7';
     }
     div.appendChild(textDiv);
 
-    if (turn.speaker === 'patient') {
+    if (turn.locuteur === 'patient') {
       // Badges annotations existantes
       const badges = document.createElement('div');
       badges.className = 'ann-turn-footer';
@@ -3746,8 +3746,8 @@ function annExport() {
     },
     tours: annTurns.map((t, i) => ({
       index: i,
-      locuteur: t.speaker,
-      texte: t.text,
+      locuteur: t.locuteur,
+      texte: t.texte,
       absence_emotion: t.noEmotion,
       annotations: t.annotations
     }))
