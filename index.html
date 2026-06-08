@@ -62,7 +62,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--t1)
 .sb-foot strong{color:rgba(200,208,228,.7);}
 
 /* main */
-#main{flex:1;overflow-y:auto;}
+#main{flex:1;overflow-y:auto;transition:margin-right .18s ease;}
+#main.gest-open{margin-right:280px;}
 .view{display:none;}.view.active{display:block;}
 .ph{background:var(--w);border-bottom:1px solid var(--bd);padding:18px 30px;position:sticky;top:0;z-index:20;}
 .ph h2{font-family:'Playfair Display',serif;font-size:21px;font-weight:400;}
@@ -904,16 +905,15 @@ input[type=range].plut-emo-sl::-moz-range-track { background:transparent; }
 
     <!-- Zone de chargement -->
     <div id="ann-import-zone" class="cc" style="max-width:720px;margin-bottom:22px;">
-      <div class="ct" style="margin-bottom:10px;">Charger un texte segmenté</div>
+      <div class="ct" style="margin-bottom:10px;">Importer un fichier à annoter</div>
       <p style="font-size:12.5px;color:var(--t2);margin-bottom:14px;">
         Format attendu : chaque tour de parole sur une ligne, précédé de <code style="background:var(--bg);padding:1px 5px;border-radius:3px;">PATIENT:</code> ou <code style="background:var(--bg);padding:1px 5px;border-radius:3px;">PSYCHIATRE:</code>
       </p>
       <textarea id="ann-raw-input" placeholder="PATIENT: Je me sens très fatigué ces derniers temps, je n'arrive plus à dormir.&#10;PSYCHIATRE: Depuis combien de temps observez-vous cela ?&#10;PATIENT: Depuis environ trois semaines, peut-être un peu plus." style="width:100%;height:130px;padding:10px 13px;border:1.5px solid var(--bd);border-radius:8px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:var(--t1);background:var(--bg);resize:vertical;line-height:1.6;"></textarea>
       <div style="display:flex;gap:9px;margin-top:10px;align-items:center;">
-        <button class="sbtn" onclick="annLoad()">Charger le texte</button>
         <label style="font-size:12.5px;color:var(--t2);cursor:pointer;">
-          <input type="file" id="ann-file-input" accept=".txt" style="display:none;" onchange="annLoadFile(this)">
-          <span style="padding:8px 16px;border:1px solid var(--bd);border-radius:8px;background:var(--w);font-size:13px;color:var(--t2);">📂 Importer un fichier .txt</span>
+          <input type="file" id="ann-file-input" accept=".txt,.json" style="display:none;" onchange="annLoadFile(this)">
+          <span style="padding:8px 16px;border:1px solid var(--bd);border-radius:8px;background:var(--w);font-size:13px;color:var(--t2);">📂 Importer un fichier à annoter .txt ou .json</span>
         </label>
         <span id="ann-load-status" style="font-size:12px;color:var(--pat);"></span>
       </div>
@@ -1167,6 +1167,7 @@ function navigate(view,params={}){
   // Panneau gestion
   const gestPanel = document.getElementById('gest-panel');
   if (gestPanel) gestPanel.style.display = (view === 'gestion') ? 'flex' : 'none';
+  document.getElementById('main').classList.toggle('gest-open', view === 'gestion');
   const footer = document.getElementById('corpus-footer');
   if(footer) footer.style.display = (view === 'exploration') ? '' : 'none';
   // Fermer le panneau d'annotation flottant en changeant de page
@@ -2300,7 +2301,7 @@ const ANN_EMO = [
   { id:'confiance',   label:'Confiance',    color:'#27AE60' },
   { id:'degout',      label:'Dégoût',       color:'#7F8C8D' },
 ];
-const ANN_POL = ['Normale','Positive','Négative','Indéterminée'];
+const ANN_POL = ['Neutre','Positive','Négative','Indéterminée'];
 const ANN_INT = ['Normale','Faible','Forte','Indéterminée'];
 const ANN_MOD = ['Négation','Incertitude / Conditionnel'];
 const ANN_ROLE_OPTS = [
@@ -2410,8 +2411,46 @@ function annLoadFile(input) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = e => {
-    document.getElementById('ann-raw-input').value = e.target.result;
-    annParse(e.target.result.trim());
+    const content = e.target.result;
+    if (file.name.endsWith('.json')) {
+      // Chargement d'un fichier JSON déjà annoté
+      try {
+        const data = JSON.parse(content);
+        // Format attendu : { annotateur, tours: [{speaker, text, noEmotion, annotations},...] }
+        if (data.tours && Array.isArray(data.tours)) {
+          annTurns = data.tours.map(t => ({
+            speaker:     t.speaker     || 'patient',
+            text:        t.texte || t.text || '',
+            noEmotion:   t.absence_emotion || t.noEmotion || false,
+            annotations: t.annotations || []
+          }));
+          const patCount = annTurns.filter(t => t.speaker === 'patient').length;
+          // Reconstruire le texte brut pour la textarea
+          const raw = annTurns.map(t =>
+            (t.speaker === 'patient' ? 'PATIENT: ' : 'PSYCHIATRE: ') + t.text
+          ).join('\n');
+          document.getElementById('ann-raw-input').value = raw;
+          document.getElementById('ann-load-status').textContent = `✓ JSON chargé — ${annTurns.length} tours (${patCount} patient)`;
+          document.getElementById('ann-import-zone').style.display = 'none';
+          document.getElementById('ann-workspace').style.display = 'block';
+          document.getElementById('ann-turn-counter').textContent =
+            `${annTurns.length} tours · ${patCount} patient · ${annTurns.length - patCount} psychiatre`;
+          annRenderTurns();
+          annSetupMouseSelection();
+          const fab = document.getElementById('ann-export-fab');
+          if (fab) fab.classList.add('visible');
+          annSaveState();
+        } else {
+          document.getElementById('ann-load-status').textContent = '⚠ Format JSON non reconnu (clé "tours" manquante).';
+        }
+      } catch(err) {
+        document.getElementById('ann-load-status').textContent = '⚠ Fichier JSON invalide : ' + err.message;
+      }
+    } else {
+      // Fichier .txt
+      document.getElementById('ann-raw-input').value = content;
+      annParse(content.trim());
+    }
   };
   reader.readAsText(file);
 }
@@ -3879,9 +3918,36 @@ function gestCalcClick() {
     comp.innerHTML = '';
 
     const annotateurs = gestFiles.map(f=>f.data.annotateur||f.name);
+
+    // ── Détection du mode : même entretien ou plusieurs entretiens ──
+    // Si tous les fichiers partagent les mêmes tours (même texte) → mode comparaison détaillée
+    // Sinon → mode score global multi-fichiers (un entretien par fichier, mêmes annotateurs)
+    const firstTourTextes = (gestFiles[0].data.tours||[])
+      .filter(t=>(t.locuteur||t.speaker||'')==='patient')
+      .map(t=>t.texte||t.text||'');
+
+    const sameInterview = gestFiles.every(f => {
+      const txts = (f.data.tours||[])
+        .filter(t=>(t.locuteur||t.speaker||'')==='patient')
+        .map(t=>t.texte||t.text||'');
+      return txts.length === firstTourTextes.length &&
+             txts.every((tx,i) => tx === firstTourTextes[i]);
+    });
+
+    if (sameInterview) {
+      // ── MODE CLASSIQUE : un seul entretien, affichage complet ──
+      gestCalcSingleInterview(comp, annotateurs, firstTourTextes);
+    } else {
+      // ── MODE MULTI-FICHIERS : plusieurs entretiens, score global uniquement ──
+      gestCalcMultiInterview(comp, annotateurs);
+    }
+
+  } catch(e){ alert('Erreur: '+e.message+'\n'+e.stack); }
+}
+
+function gestCalcSingleInterview(comp, annotateurs, tourTextes) {
     const refTours = (gestFiles[0].data.tours||[]).filter(t=>(t.locuteur||t.speaker||'')==='patient');
     if (!refTours.length) { comp.innerHTML='<p style="color:var(--t3)">Aucun tour patient trouvé.</p>'; return; }
-    const tourTextes = refTours.map(t=>t.texte||t.text||'');
 
     // Catégories communes
     const catSet = new Set();
@@ -3912,7 +3978,6 @@ function gestCalcClick() {
     cardsRow.style.cssText='display:flex;flex-wrap:wrap;gap:12px;margin-bottom:4px;';
 
     if (gestFiles.length===2) {
-      // Cohen's Kappa (paire unique)
       const k = gestCohenKappa(vectors[0],vectors[1],cats);
       const col = gestScoreColor(k);
       const card = document.createElement('div');
@@ -3922,7 +3987,6 @@ function gestCalcClick() {
         '<div style="font-size:11.5px;color:var(--t2);margin-top:4px;">Cohen\u2019s \u03ba \u2014 '+gestScoreLabel(k)+'</div>';
       cardsRow.appendChild(card);
     } else {
-      // Krippendorff's Alpha (multi)
       const alpha = gestKrippendorffAlpha(vectors,cats);
       const col = gestScoreColor(alpha);
       const card = document.createElement('div');
@@ -3931,7 +3995,6 @@ function gestCalcClick() {
         '<div style="font-size:28px;font-weight:700;color:'+col+';font-family:IBM Plex Mono,monospace;">'+(alpha!==null?alpha.toFixed(3):'—')+'</div>'+
         '<div style="font-size:11.5px;color:var(--t2);margin-top:4px;">Krippendorff\u2019s \u03b1 \u2014 '+gestScoreLabel(alpha)+'</div>';
       cardsRow.appendChild(card);
-      // Aussi les Kappa par paire
       for (let i=0;i<gestFiles.length;i++) for(let j=i+1;j<gestFiles.length;j++){
         const k=gestCohenKappa(vectors[i],vectors[j],cats);
         const c=gestScoreColor(k);
@@ -3946,16 +4009,13 @@ function gestCalcClick() {
     scoresDiv.appendChild(cardsRow);
     comp.appendChild(scoresDiv);
 
-    // ── Heatmap ──
     gestRenderHeatmap(comp, tourTextes, cats, vectors, annotateurs);
 
-    // ── Comparaison tour par tour ──
     const sep=document.createElement('hr');
     sep.style.cssText='border:none;border-top:1px solid var(--bd);margin:20px 0;';
     comp.appendChild(sep);
-    gestAppendTourComparison(comp, tourTextes);
+    gestAppendTourComparison(comp, tourTextes, vectors, cats);
 
-    // Sauvegarder les scores pour export
     const kappas = {};
     for (let i=0;i<gestFiles.length;i++) for(let j=i+1;j<gestFiles.length;j++){
       const k=gestCohenKappa(vectors[i],vectors[j],cats);
@@ -3972,13 +4032,216 @@ function gestCalcClick() {
       interpretation: gestScoreLabel(gestFiles.length===2 ? Object.values(kappas)[0] : gestKrippendorffAlpha(vectors,cats))
     };
 
-    // Afficher bouton export
     const exportBtn = document.getElementById('gest-export-btn');
     if (exportBtn) exportBtn.style.display = 'block';
-
     document.getElementById('main').scrollTop=0;
+}
 
-  } catch(e){ alert('Erreur: '+e.message+'\n'+e.stack); }
+function gestCalcMultiInterview(comp, annotateurs) {
+  // Chaque fichier = un entretien annoté par le même annotateur (identifié par f.data.annotateur)
+  // On regroupe les fichiers par annotateur, puis on aligne les entretiens par nom de fichier ou par index
+  // Hypothèse : les N fichiers sont appariés dans l'ordre de chargement (fichier 1 annot A, fichier 1 annot B, etc.)
+  // → on détecte les paires par nom de fichier dépouillé de l'identifiant annotateur
+
+  // Collecter toutes les combinaisons de fichiers par entretien commun (même index de chargement par paire)
+  // Stratégie : regrouper par basename sans l'identifiant annotateur, ou simplement par position si noms différents.
+  // On utilise une approche pragmatique : on cherche des groupes de fichiers qui couvrent les mêmes tours
+  // En pratique pour un corpus : charger N×K fichiers (N entretiens × K annotateurs), appariés par ordre
+
+  // On groupe les fichiers par "entretien" en cherchant les partages de tours patients
+  // Simplification robuste : clustering par intersection de textes de tours
+  const groups = []; // chaque groupe = liste d'indices dans gestFiles partageant le même entretien
+
+  const used = new Set();
+  for (let i = 0; i < gestFiles.length; i++) {
+    if (used.has(i)) continue;
+    const group = [i];
+    used.add(i);
+    const txtsI = (gestFiles[i].data.tours||[])
+      .filter(t=>(t.locuteur||t.speaker||'')==='patient')
+      .map(t=>t.texte||t.text||'');
+    for (let j = i+1; j < gestFiles.length; j++) {
+      if (used.has(j)) continue;
+      const txtsJ = (gestFiles[j].data.tours||[])
+        .filter(t=>(t.locuteur||t.speaker||'')==='patient')
+        .map(t=>t.texte||t.text||'');
+      // Considère même entretien si >60% de tours en commun
+      const inter = txtsI.filter(tx=>txtsJ.includes(tx)).length;
+      const union = new Set([...txtsI,...txtsJ]).size;
+      if (union > 0 && inter/union >= 0.6) { group.push(j); used.add(j); }
+    }
+    groups.push(group);
+  }
+
+  // Titre
+  const banner = document.createElement('div');
+  banner.style.cssText='background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:14px 18px;margin-bottom:20px;';
+  banner.innerHTML='<div style="font-size:12px;font-weight:500;color:var(--t1);margin-bottom:4px;">📊 Score global — '+groups.length+' entretien(s) détecté(s)</div>'+
+    '<div style="font-size:11px;color:var(--t3);">Chaque entretien contribue proportionnellement à son nombre de tours. Heatmap et comparaison tour par tour disponibles uniquement en mode entretien unique.</div>';
+  comp.appendChild(banner);
+
+  // Agréger les vecteurs de tous les groupes valides (≥2 annotateurs)
+  // On cherche les annotateurs communs à tous les groupes
+  let allVectorsPerAnnotateur = {}; // annotateur → vecteur global concaténé
+  let allCats = new Set();
+  let totalTours = 0;
+
+  // Collecter toutes les catégories d'abord
+  gestFiles.forEach(f=>(f.data.tours||[]).forEach(t=>(t.annotations||[]).forEach(a=>{
+    (a.emotions||[]).forEach(e=>allCats.add(e));
+    (a.emotions2||[]).forEach(e=>allCats.add(e));
+  })));
+  const cats = [...allCats];
+
+  // Pour chaque groupe valide, accumuler les vecteurs
+  const validGroups = groups.filter(g=>g.length>=2);
+  if (!validGroups.length) {
+    comp.innerHTML+='<p style="color:var(--t3);padding:20px;">Impossible d\'apparier les fichiers en entretiens communs. Vérifiez que vos fichiers sont bien des annotations du même entretien par annotateurs différents.</p>';
+    return;
+  }
+
+  // Construire un vecteur global par annotateur (concaténation de tous les tours de tous les entretiens)
+  // On normalise : pour chaque groupe, on identifie les annotateurs par f.data.annotateur ou f.name
+  // et on concatène leurs vecteurs dans le même ordre de tours
+  const globalAnnotateurs = [...new Set(gestFiles.map(f=>f.data.annotateur||f.name))];
+
+  // Pour chaque groupe, extraire les tours et vecteurs par annotateur
+  const globalVectors = globalAnnotateurs.map(()=>[]);
+
+  validGroups.forEach(group => {
+    // Tours de référence = premier fichier du groupe
+    const refFile = gestFiles[group[0]];
+    const tourTextes = (refFile.data.tours||[])
+      .filter(t=>(t.locuteur||t.speaker||'')==='patient')
+      .map(t=>t.texte||t.text||'');
+    totalTours += tourTextes.length;
+
+    globalAnnotateurs.forEach((ann, ai) => {
+      // Trouver le fichier de cet annotateur dans ce groupe
+      const fIdx = group.find(gi => (gestFiles[gi].data.annotateur||gestFiles[gi].name) === ann);
+      if (fIdx !== undefined) {
+        const vecs = tourTextes.map(tx=>gestGetVector(gestFiles[fIdx].data, tx));
+        globalVectors[ai].push(...vecs);
+      } else {
+        // Annotateur absent de ce groupe → vecteurs vides
+        tourTextes.forEach(()=>globalVectors[ai].push([]));
+      }
+    });
+  });
+
+  // Calculer les scores globaux
+  const scoresDiv = document.createElement('div');
+  scoresDiv.style.marginBottom='20px';
+  const t1 = document.createElement('div');
+  t1.className='ct'; t1.style.marginBottom='8px';
+  t1.textContent = globalAnnotateurs.length===2 ? "Cohen's Kappa — score global" : "Krippendorff's Alpha — score global";
+  scoresDiv.appendChild(t1);
+  const meta = document.createElement('div');
+  meta.style.cssText='font-size:11px;color:var(--t3);margin-bottom:12px;';
+  meta.textContent = totalTours+' tours au total · '+cats.length+' catégories · '+validGroups.length+' entretien(s)';
+  scoresDiv.appendChild(meta);
+
+  const cardsRow = document.createElement('div');
+  cardsRow.style.cssText='display:flex;flex-wrap:wrap;gap:12px;margin-bottom:4px;';
+
+  if (globalAnnotateurs.length===2) {
+    const k = gestCohenKappa(globalVectors[0],globalVectors[1],cats);
+    const col = gestScoreColor(k);
+    const card = document.createElement('div');
+    card.style.cssText='flex:1;min-width:220px;background:var(--bg);border-radius:10px;padding:16px 20px;border-left:4px solid '+col+';';
+    card.innerHTML='<div style="font-size:11px;color:var(--t3);margin-bottom:4px;">'+globalAnnotateurs[0]+' vs '+globalAnnotateurs[1]+'</div>'+
+      '<div style="font-size:34px;font-weight:700;color:'+col+';font-family:IBM Plex Mono,monospace;">'+(k!==null?k.toFixed(3):'—')+'</div>'+
+      '<div style="font-size:12px;color:var(--t2);margin-top:5px;">Cohen\u2019s \u03ba global \u2014 '+gestScoreLabel(k)+'</div>';
+    cardsRow.appendChild(card);
+  } else {
+    const alpha = gestKrippendorffAlpha(globalVectors, cats);
+    const col = gestScoreColor(alpha);
+    const card = document.createElement('div');
+    card.style.cssText='flex:1;min-width:220px;background:var(--bg);border-radius:10px;padding:16px 20px;border-left:4px solid '+col+';';
+    card.innerHTML='<div style="font-size:11px;color:var(--t3);margin-bottom:4px;">'+globalAnnotateurs.join(' · ')+'</div>'+
+      '<div style="font-size:34px;font-weight:700;color:'+col+';font-family:IBM Plex Mono,monospace;">'+(alpha!==null?alpha.toFixed(3):'—')+'</div>'+
+      '<div style="font-size:12px;color:var(--t2);margin-top:5px;">Krippendorff\u2019s \u03b1 global \u2014 '+gestScoreLabel(alpha)+'</div>';
+    cardsRow.appendChild(card);
+    // Kappa par paire
+    for (let i=0;i<globalAnnotateurs.length;i++) for(let j=i+1;j<globalAnnotateurs.length;j++){
+      const k=gestCohenKappa(globalVectors[i],globalVectors[j],cats);
+      const c=gestScoreColor(k);
+      const kc=document.createElement('div');
+      kc.style.cssText='background:var(--bg);border-radius:10px;padding:12px 16px;border-left:3px solid '+c+';font-size:11.5px;';
+      kc.innerHTML='<div style="color:var(--t3);margin-bottom:2px;">'+globalAnnotateurs[i]+' vs '+globalAnnotateurs[j]+'</div>'+
+        '<div style="font-weight:700;color:'+c+';font-family:IBM Plex Mono,monospace;font-size:20px;">'+(k!==null?k.toFixed(3):'—')+'</div>'+
+        '<div style="color:var(--t2);">\u03ba \u2014 '+gestScoreLabel(k)+'</div>';
+      cardsRow.appendChild(kc);
+    }
+  }
+  scoresDiv.appendChild(cardsRow);
+  comp.appendChild(scoresDiv);
+
+  // Tableau récapitulatif par entretien
+  const recapTitle = document.createElement('div');
+  recapTitle.className='ct'; recapTitle.style.cssText='margin-top:20px;margin-bottom:10px;';
+  recapTitle.textContent='Détail par entretien';
+  comp.appendChild(recapTitle);
+
+  const table = document.createElement('table');
+  table.style.cssText='width:100%;border-collapse:collapse;font-size:12px;';
+  const thead = document.createElement('thead');
+  thead.innerHTML='<tr style="border-bottom:1.5px solid var(--bd);">'+
+    '<th style="text-align:left;padding:6px 10px;color:var(--t3);font-weight:500;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;">Entretien</th>'+
+    '<th style="text-align:left;padding:6px 10px;color:var(--t3);font-weight:500;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;">Tours</th>'+
+    '<th style="text-align:left;padding:6px 10px;color:var(--t3);font-weight:500;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;">Annotateurs</th>'+
+    (globalAnnotateurs.length===2 ? '<th style="text-align:left;padding:6px 10px;color:var(--t3);font-weight:500;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;">\u03ba</th>' :
+      '<th style="text-align:left;padding:6px 10px;color:var(--t3);font-weight:500;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;">\u03b1</th>')+
+    '</tr>';
+  table.appendChild(thead);
+  const tbody = document.createElement('tbody');
+
+  validGroups.forEach((group, gi) => {
+    const refFile = gestFiles[group[0]];
+    const entName = refFile.data.entretien_id || refFile.name.replace(/(_[^_]+)?\.json$/,'') || ('Entretien '+(gi+1));
+    const tourTextes = (refFile.data.tours||[])
+      .filter(t=>(t.locuteur||t.speaker||'')==='patient')
+      .map(t=>t.texte||t.text||'');
+    const gAnnotateurs = group.map(gi2=>(gestFiles[gi2].data.annotateur||gestFiles[gi2].name));
+    const gVectors = group.map(gi2=>tourTextes.map(tx=>gestGetVector(gestFiles[gi2].data,tx)));
+
+    let score = null, scoreLabel = '—';
+    if (gAnnotateurs.length===2) {
+      score = gestCohenKappa(gVectors[0],gVectors[1],cats);
+    } else {
+      score = gestKrippendorffAlpha(gVectors,cats);
+    }
+    const col = gestScoreColor(score);
+    const tr = document.createElement('tr');
+    tr.style.borderBottom='1px solid #F2EFE8';
+    tr.innerHTML='<td style="padding:8px 10px;font-weight:500;color:var(--t1);">'+entName+'</td>'+
+      '<td style="padding:8px 10px;color:var(--t2);">'+tourTextes.length+'</td>'+
+      '<td style="padding:8px 10px;color:var(--t2);">'+gAnnotateurs.join(', ')+'</td>'+
+      '<td style="padding:8px 10px;font-family:IBM Plex Mono,monospace;font-weight:700;color:'+col+';">'+(score!==null?score.toFixed(3):'—')+
+        ' <span style="font-weight:400;font-family:IBM Plex Sans,sans-serif;font-size:10.5px;color:var(--t3);">'+gestScoreLabel(score)+'</span></td>';
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  comp.appendChild(table);
+
+  gestLastScores = {
+    date: new Date().toISOString(),
+    mode: 'multi_entretiens',
+    annotateurs: globalAnnotateurs,
+    n_entretiens: validGroups.length,
+    n_tours_total: totalTours,
+    n_categories: cats.length,
+    score_global: globalAnnotateurs.length===2 ?
+      gestCohenKappa(globalVectors[0],globalVectors[1],cats) :
+      gestKrippendorffAlpha(globalVectors,cats),
+    interpretation: gestScoreLabel(globalAnnotateurs.length===2 ?
+      gestCohenKappa(globalVectors[0],globalVectors[1],cats) :
+      gestKrippendorffAlpha(globalVectors,cats))
+  };
+
+  const exportBtn = document.getElementById('gest-export-btn');
+  if (exportBtn) exportBtn.style.display = 'block';
+  document.getElementById('main').scrollTop=0;
 }
 
 function gestRenderHeatmap(comp, tourTextes, cats, vectors, annotateurs) {
@@ -4050,7 +4313,7 @@ function gestRenderHeatmap(comp, tourTextes, cats, vectors, annotateurs) {
   comp.appendChild(wrap);
 }
 
-function gestAppendTourComparison(comp, tourTextes) {
+function gestAppendTourComparison(comp, tourTextes, vectors, cats) {
   const annotateurs = gestFiles.map(f=>f.data.annotateur||f.name);
   const t=document.createElement('div');
   t.className='ct'; t.style.marginBottom='12px';
@@ -4061,10 +4324,37 @@ function gestAppendTourComparison(comp, tourTextes) {
     const refIdx=allRef.findIndex(t=>(t.texte||t.text||'')===texte);
     const card=document.createElement('div');
     card.className='cc'; card.style.cssText='margin-bottom:12px;padding:14px 18px;';
+
+    // En-tête : texte du tour + badge(s) Jaccard
+    const headerRow=document.createElement('div');
+    headerRow.style.cssText='display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--bd);';
     const txt=document.createElement('div');
-    txt.style.cssText='font-size:12.5px;color:var(--t1);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--bd);line-height:1.6;';
+    txt.style.cssText='font-size:12.5px;color:var(--t1);flex:1;line-height:1.6;';
     txt.innerHTML='<span style="font-size:10px;font-weight:500;color:var(--pat);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px;">Tour patient '+(idx+1)+'</span>'+texte;
-    card.appendChild(txt);
+    headerRow.appendChild(txt);
+
+    // Badges Jaccard par paire
+    const badgeWrap=document.createElement('div');
+    badgeWrap.style.cssText='display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;';
+    for (let i=0;i<gestFiles.length;i++) for(let j=i+1;j<gestFiles.length;j++){
+      const setI=new Set(vectors[i][idx]);
+      const setJ=new Set(vectors[j][idx]);
+      const inter=[...setI].filter(x=>setJ.has(x)).length;
+      const union=new Set([...setI,...setJ]).size;
+      const jacc=union===0?null:inter/union;
+      const bc=jacc===null?'#9CA3AF':jacc>=0.8?'#27AE60':jacc>=0.5?'#F1C40F':jacc>=0.2?'#E67E22':'#C0392B';
+      const badge=document.createElement('div');
+      badge.title='Recouvrement Jaccard \u2014 |A\u2229B|\u00f7|A\u222aB| sur les \u00e9motions du tour';
+      badge.style.cssText='display:flex;align-items:center;gap:5px;background:var(--bg);border-radius:100px;padding:3px 9px;border:1.5px solid '+bc+';';
+      const annI=annotateurs[i].split(' ')[0]||annotateurs[i];
+      const annJ=annotateurs[j].split(' ')[0]||annotateurs[j];
+      badge.innerHTML='<span style="font-size:9.5px;color:var(--t3);">'+annI+' / '+annJ+'</span>'+
+        '<span style="font-size:11px;font-weight:700;color:'+bc+';font-family:IBM Plex Mono,monospace;">'+(jacc===null?'\u2205':(jacc*100).toFixed(0)+'%')+'</span>';
+      badgeWrap.appendChild(badge);
+    }
+    headerRow.appendChild(badgeWrap);
+    card.appendChild(headerRow);
+
     const cols=document.createElement('div');
     cols.style.cssText='display:grid;grid-template-columns:repeat('+gestFiles.length+',1fr);gap:14px;';
     gestFiles.forEach((f,fi)=>{
@@ -4078,19 +4368,19 @@ function gestAppendTourComparison(comp, tourTextes) {
       head.textContent=annotateurs[fi];
       col.appendChild(head);
       if(noEmo){
-        col.innerHTML+='<span style="font-size:11px;color:var(--t3);font-style:italic;">∅ Absence d’émotion</span>';
+        col.innerHTML+='<span style="font-size:11px;color:var(--t3);font-style:italic;">\u2205 Absence d\u2019\u00e9motion</span>';
       } else if(!anns.length){
-        col.innerHTML+='<span style="font-size:11px;color:var(--t3);font-style:italic;">— Non annoté</span>';
+        col.innerHTML+='<span style="font-size:11px;color:var(--t3);font-style:italic;">\u2014 Non annot\u00e9</span>';
       } else {
         anns.forEach(ann=>{
           const emos=[...(ann.emotions||[]).map(id=>{const e=ANN_EMO.find(x=>x.id===id);return e?e.label:id;}),
             ...(ann.emotions2||[]).map(id=>annEmo2Label(id)),ann.emotionLibre||''].filter(Boolean);
           const b=document.createElement('div');
           b.style.cssText='background:var(--bg);border-radius:6px;padding:6px 9px;margin-bottom:6px;border-left:3px solid var(--pat);font-size:12px;';
-          b.innerHTML='<div style="font-weight:500;color:var(--t1);">'+(emos.join(', ')||'—')+'</div>'+
-            '<div style="font-size:10.5px;color:var(--t3);margin-top:2px;">« '+(ann.text||'')+' »</div>'+
-            (ann.polarite?'<div style="font-size:10px;color:var(--t3);">Polarité: '+ann.polarite+'</div>':'')+
-            (ann.intensite?'<div style="font-size:10px;color:var(--t3);">Intensité: '+ann.intensite+'</div>':'');
+          b.innerHTML='<div style="font-weight:500;color:var(--t1);">'+(emos.join(', ')||'\u2014')+'</div>'+
+            '<div style="font-size:10.5px;color:var(--t3);margin-top:2px;">\u00ab '+(ann.text||'')+' \u00bb</div>'+
+            (ann.polarite?'<div style="font-size:10px;color:var(--t3);">Polarit\u00e9: '+ann.polarite+'</div>':'')+
+            (ann.intensite?'<div style="font-size:10px;color:var(--t3);">Intensit\u00e9: '+ann.intensite+'</div>':'');
           col.appendChild(b);
         });
       }
