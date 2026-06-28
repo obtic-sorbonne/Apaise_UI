@@ -13,3 +13,5 @@ La page de gestion des annotations permet de charger plusieurs fichiers JSON ann
 L'ensemble fonctionne entièrement dans le navigateur, comme une application web monopage en HTML/CSS/JavaScript vanilla, sans framework ni serveur, avec Chart.js comme seule dépendance externe.
 
 Version en ligne: https://obtic-sorbonne.github.io/Apaise_UI/
+
+Contact: motasem.alrahabi@gmail.com
