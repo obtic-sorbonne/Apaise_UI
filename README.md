@@ -1,4 +1,3 @@
-### apaise
 ## Apaise UI — Outil d'annotation et d'analyse émotionnelle d'entretiens psychiatriques
 
 Cette application web est conçue pour l'annotation manuelle et l'analyse comparative d'entretiens psychiatriques transcrits. 
