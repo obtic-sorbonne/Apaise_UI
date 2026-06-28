@@ -806,13 +806,24 @@ input[type=range].plut-emo-sl::-moz-range-track { background:transparent; }
 <!-- ─── GUIDE ─── -->
 <div id="view-guide" class="view">
   <div class="ph"><h2>Guide d'utilisation</h2><p>Documentation et aide</p></div>
-  <div class="static-page"><h3>Guide</h3><p>Cette page est réservée au guide d'utilisation. Le contenu sera ajouté prochainement.</p></div>
+  <div class="static-page">
+    <p>Cette application web est conçue pour l'annotation manuelle et l'analyse comparative d'entretiens psychiatriques transcrits.</p>
+    <p>Elle permet d'importer des transcriptions au format texte, de les segmenter automatiquement en tours de parole (patient / psychiatre), puis d'annoter chaque tour patient avec des émotions primaires et secondaires (roue de Plutchik), une polarité, une intensité, un type d'annotation (littérale ou inférée) et un commentaire libre.</p>
+    <p>Un module d'exploration permet de filtrer et rechercher dans le corpus, de visualiser les concordances (KWIC) et d'exporter les résultats en CSV.</p>
+    <p>Un module de clustering (TF-IDF + k-means + projection PCA) regroupe les entretiens par profil émotionnel.</p>
+    <p>La page de gestion des annotations permet de charger plusieurs fichiers JSON annotés, de calculer des métriques d'accord inter-annotateurs (Cohen's Kappa, Krippendorff's Alpha, Jaccard), de visualiser les désaccords sous forme de heatmap, et de produire un fichier réconcilié tour par tour.</p>
+    <p>L'ensemble fonctionne entièrement dans le navigateur, comme une application web monopage en HTML/CSS/JavaScript vanilla, sans framework ni serveur, avec Chart.js comme seule dépendance externe.</p>
+  </div>
 </div>
 
 <!-- ─── À PROPOS ─── -->
 <div id="view-apropos" class="view">
   <div class="ph"><h2>À propos</h2><p>Informations sur le projet</p></div>
-  <div class="static-page"><h3>À propos</h3><p>Cette page est réservée aux informations sur le projet, l'équipe et les références. Le contenu sera ajouté prochainement.</p></div>
+  <div class="static-page">
+    <h3>Projet APAISE</h3>
+    <p><a href="https://obtic.sorbonne-universite.fr/projet/apaise/" target="_blank" style="color:var(--acc);">https://obtic.sorbonne-universite.fr/projet/apaise/</a></p>
+    <!--  <p><a href="mailto:motasem.alrahabi@sorbonne-universite.fr" style="color:var(--acc);">motasem.alrahabi@sorbonne-universite.fr</a></p>  ─── -->
+  </div>
 </div>
 
 <!-- ─── ROUE DES ÉMOTIONS ─── -->
