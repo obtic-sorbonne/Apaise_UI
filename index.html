@@ -85,7 +85,7 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--t1);displ
 /* main */
 #main{flex:1;overflow-y:auto;transition:margin-right .18s ease;}
 #main.gest-open{margin-right:280px;}
-#gest-panel-arrow{transition:right .22s ease;}
+
 .view{display:none;}.view.active{display:block;}
 .ph{background:var(--w);border-bottom:1px solid var(--bd);padding:18px 30px;position:sticky;top:0;z-index:20;}
 .ph h2{font-family:Georgia,serif;font-size:21px;font-weight:400;}
@@ -1074,11 +1074,10 @@ input[type=range].plut-emo-sl::-moz-range-track { background:transparent; }
 
 <!-- ─── PANNEAU FLOTTANT GESTION ─── -->
 <div id="gest-panel" style="display:flex;position:fixed;right:0;top:0;width:280px;height:100vh;background:var(--w);border-left:1.5px solid var(--bd);box-shadow:-4px 0 20px rgba(0,0,0,.08);z-index:150;flex-direction:column;overflow-y:auto;padding:20px 16px;box-sizing:border-box;transition:transform .22s ease;transform:translateX(100%);visibility:hidden;" data-open="false">
-  <button id="gest-panel-arrow" onclick="gestTogglePanel()" title="Ouvrir/fermer le panneau"
-    style="position:fixed;right:0;top:calc(50% - 28px);z-index:152;background:var(--w);border:1.5px solid var(--bd);border-right:none;border-radius:6px 0 0 6px;padding:8px 6px;cursor:pointer;font-size:13px;color:var(--t3);line-height:1;box-shadow:-3px 0 8px rgba(0,0,0,.08);transition:right .22s ease;visibility:hidden;">▶</button>
 
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
     <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--t3);">Gestion des annotations</div>
+    <button onclick="gestTogglePanel()" title="Réduire le volet" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--t3);line-height:1;padding:2px 6px;border-radius:4px;" onmouseenter="this.style.color='var(--t1)'" onmouseleave="this.style.color='var(--t3)'">›</button>
   </div>
 
   <!-- Import -->
@@ -1098,14 +1097,35 @@ input[type=range].plut-emo-sl::-moz-range-track { background:transparent; }
 
   <div style="border-top:1px solid var(--bd);margin-bottom:12px;"></div>
   <div style="font-size:11px;color:var(--t3);font-style:italic;margin-bottom:10px;">Kappa · Alpha · Heatmap calculés automatiquement dès 2 fichiers chargés.</div>
-  <span id="gest-export-btn" onclick="gestExportScores()"
-    style="display:none;text-align:center;padding:7px;border-radius:8px;border:1.5px solid var(--pat);font-size:12px;cursor:pointer;background:var(--pat);color:#fff;font-family:system-ui,sans-serif;font-weight:500;">
-    ↓ Exporter les scores (JSON)
-  </span>
+  <span id="gest-export-btn" style="display:none;"></span>
+
+  <div id="recon-export-panel-wrap" style="display:none;">
+    <div style="border-top:1px solid var(--bd);margin:12px 0;"></div>
+    <div style="font-size:12px;font-weight:500;color:var(--t1);margin-bottom:6px;">
+      <a onclick="setTimeout(()=>{const el=document.getElementById('recon-section');const main=document.getElementById('main');if(el&&main){const top=el.getBoundingClientRect().top-main.getBoundingClientRect().top+main.scrollTop-12;main.scrollTo({top,behavior:'smooth'});}},100)" style="color:var(--acc);text-decoration:none;cursor:pointer;">⚖ Réconciliation ↓</a>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <span id="recon-inline-progress-txt" style="font-size:11px;color:var(--t2);flex:1;"></span>
+      <div style="width:70px;height:4px;background:var(--bd);border-radius:2px;flex-shrink:0;">
+        <div id="recon-inline-progress-bar" style="height:100%;width:0%;background:var(--acc);border-radius:2px;transition:width .3s;"></div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--t3);margin-bottom:8px;">Choisissez une version par tour dans la comparaison ci-dessous, puis exportez.</div>
+    <button onclick="reconInlineExport()" style="width:100%;padding:7px;border-radius:8px;border:1.5px solid var(--acc);font-size:12px;cursor:pointer;background:var(--acc);color:#fff;font-family:system-ui,sans-serif;font-weight:500;">
+      ↓ Exporter le fichier réconcilié
+    </button>
+  </div>
+
 
 </div>
 
 </div><!-- #main -->
+
+<!-- Onglet latéral fixe pour rouvrir le panneau gestion -->
+<button id="gest-tab" onclick="gestTogglePanel()"
+  style="display:none;position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:152;background:var(--w);border:1.5px solid var(--bd);border-right:none;border-radius:8px 0 0 8px;padding:10px 5px;cursor:pointer;box-shadow:-3px 0 10px rgba(0,0,0,.1);transition:opacity .2s;writing-mode:vertical-rl;font-size:11px;font-weight:600;color:var(--t2);letter-spacing:.5px;white-space:nowrap;gap:6px;align-items:center;">
+  ‹ Gestion
+</button>
 
 <script>
 // ══════════════════════════════════════════
@@ -1204,23 +1224,27 @@ function navigate(view,params={}){
   const fab = document.getElementById('ann-export-fab');
   if (fab) fab.classList.toggle('visible', view === 'annotation' && annTurns.length > 0);
   // Panneau gestion
-  document.getElementById('main').classList.toggle('gest-open', view === 'gestion');
-  const gp = document.getElementById('gest-panel');
-  const ga = document.getElementById('gest-panel-arrow');
+  const gp  = document.getElementById('gest-panel');
+  const tab = document.getElementById('gest-tab');
   if (gp) {
     if (view === 'gestion') {
-      // Rendre visible + ouvrir si replié
       gp.style.visibility = 'visible';
-      ga && (ga.style.visibility = 'visible');
+      // Ouvrir si fermé
       if (gp.dataset.open === 'false') {
         gp.style.transform = 'translateX(0)';
         gp.dataset.open = 'true';
-        if (ga) { ga.textContent = '◀'; ga.style.right = '278px'; }
+        document.getElementById('main').classList.add('gest-open');
+        if (tab) tab.style.display = 'none';
+      } else {
+        if (tab) tab.style.display = 'none';
       }
     } else {
-      // Masquer complètement hors de la vue gestion
       gp.style.visibility = 'hidden';
-      ga && (ga.style.visibility = 'hidden');
+      if (tab) tab.style.display = 'none';
+      // Réinitialiser pour la prochaine fois
+      gp.dataset.open = 'false';
+      gp.style.transform = 'translateX(100%)';
+      document.getElementById('main').classList.remove('gest-open');
     }
   }
   const footer = document.getElementById('corpus-footer');
@@ -3876,24 +3900,18 @@ let gestOptions = null; // options choisies dans la modale
 // ── Panneau latéral rétractable ──────────────────────────────────────
 function gestTogglePanel() {
   const panel = document.getElementById('gest-panel');
-  const arrow = document.getElementById('gest-panel-arrow');
+  const tab   = document.getElementById('gest-tab');
   const isOpen = panel.dataset.open !== 'false';
   if (isOpen) {
-    // Replier
     panel.style.transform = 'translateX(100%)';
     panel.dataset.open = 'false';
-    if (arrow) {
-      arrow.textContent = '▶';
-      arrow.style.right = '0px';
-    }
+    document.getElementById('main').classList.remove('gest-open');
+    if (tab) { tab.style.display = 'flex'; }
   } else {
-    // Déplier
     panel.style.transform = 'translateX(0)';
     panel.dataset.open = 'true';
-    if (arrow) {
-      arrow.textContent = '◀';
-      arrow.style.right = '278px';
-    }
+    document.getElementById('main').classList.add('gest-open');
+    if (tab) { tab.style.display = 'none'; }
   }
 }
 
@@ -3919,10 +3937,7 @@ function gestLoadJSON(input) {
     reader.onload = e => {
       try {
         const data = JSON.parse(e.target.result);
-        const ann = data.annotateur || '';
-        const eid = data.entretien_id || '';
-        const baseName = file.name.replace(/\.json$/i, '');
-        const dedupKey = ann + '||' + (eid || baseName);
+        const dedupKey = file.name;
         const idx = gestFiles.findIndex(f => f._dedupKey === dedupKey);
         const entry = { name: file.name, data, _dedupKey: dedupKey };
         if (idx >= 0) gestFiles[idx] = entry;
@@ -4042,46 +4057,52 @@ function gestOpenModal() {
 
   modal.innerHTML = '';
   const box = document.createElement('div');
-  box.style.cssText = 'background:var(--w);border-radius:12px;padding:28px 32px;max-width:520px;width:90%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);';
+  box.style.cssText = 'background:var(--w);border-radius:12px;padding:20px 24px;max-width:480px;width:90%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);';
 
   // Titre
   const title = document.createElement('div');
-  title.style.cssText = 'font-size:16px;font-weight:700;color:var(--t1);margin-bottom:6px;';
+  title.style.cssText = 'font-size:13px;font-weight:700;color:var(--t1);margin-bottom:5px;';
   title.textContent = 'Paramètres du calcul';
   box.appendChild(title);
 
   // Résumé fichiers
   const summary = document.createElement('div');
-  summary.style.cssText = 'font-size:12px;color:var(--t3);margin-bottom:20px;padding:8px 12px;background:var(--bg);border-radius:6px;border:1px solid var(--bd);';
+  summary.style.cssText = 'font-size:11px;color:var(--t3);margin-bottom:14px;padding:6px 10px;background:var(--bg);border-radius:6px;border:1px solid var(--bd);';
   summary.innerHTML = '<strong>' + nFiles + '</strong> fichiers · <strong>' + K + '</strong> annotateur(s) · <strong>' + nEnt + '</strong> entretien(s)';
   box.appendChild(summary);
 
   // Groupes d'options
   GEST_OPTION_GROUPS.forEach(grp => {
     const grpDiv = document.createElement('div');
-    grpDiv.style.cssText = 'margin-bottom:16px;';
+    grpDiv.style.cssText = 'margin-bottom:12px;';
     const grpTitle = document.createElement('div');
-    grpTitle.style.cssText = 'font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--t3);margin-bottom:8px;';
+    grpTitle.style.cssText = 'font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--t3);margin-bottom:6px;';
     grpTitle.textContent = grp.title;
     grpDiv.appendChild(grpTitle);
+
+    // Visualisations : affichage en ligne
+    const isVizGroup = grp.title === 'Visualisations';
+    const rowsWrap = document.createElement('div');
+    if (isVizGroup) rowsWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;';
 
     grp.keys.forEach(key => {
       const isRequired = GEST_REQUIRED_OPTIONS.has(key);
       const isRadio = grp.radio && grp.radio.includes(key);
 
       const row = document.createElement('label');
-      row.style.cssText = 'display:flex;align-items:flex-start;gap:10px;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12.5px;color:var(--t1);';
-      if (isRadio) row.style.paddingLeft = '22px';
+      if (isVizGroup) {
+        row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:6px;cursor:pointer;font-size:11px;color:var(--t1);border:1px solid var(--bd);background:var(--bg);';
+      } else {
+        row.style.cssText = 'display:flex;align-items:flex-start;gap:8px;padding:4px 8px;border-radius:6px;cursor:pointer;font-size:11px;color:var(--t1);';
+        if (isRadio) row.style.paddingLeft = '20px';
+      }
 
       if (isRequired) {
         row.style.opacity = '.6';
         row.title = 'Option obligatoire — toujours incluse';
-      } else if (!isRadio) {
-        row.onmouseenter = () => row.style.background = 'var(--bg)';
-        row.onmouseleave = () => row.style.background = '';
       } else {
-        row.onmouseenter = () => row.style.background = 'var(--bg)';
-        row.onmouseleave = () => row.style.background = '';
+        row.onmouseenter = () => row.style.background = isVizGroup ? '' : 'var(--bg)';
+        row.onmouseleave = () => row.style.background = isVizGroup ? 'var(--bg)' : '';
       }
 
       const cb = document.createElement('input');
@@ -4119,12 +4140,14 @@ function gestOpenModal() {
       }
 
       row.appendChild(cb); row.appendChild(lbl);
-      grpDiv.appendChild(row);
+      if (isVizGroup) rowsWrap.appendChild(row);
+      else grpDiv.appendChild(row);
     });
 
+    if (isVizGroup) grpDiv.appendChild(rowsWrap);
     box.appendChild(grpDiv);
     const sep = document.createElement('hr');
-    sep.style.cssText = 'border:none;border-top:1px solid var(--bd);margin:0 0 14px;';
+    sep.style.cssText = 'border:none;border-top:1px solid var(--bd);margin:0 0 10px;';
     box.appendChild(sep);
   });
 
@@ -4134,12 +4157,12 @@ function gestOpenModal() {
 
   const btnCancel = document.createElement('button');
   btnCancel.textContent = 'Annuler';
-  btnCancel.style.cssText = 'padding:8px 18px;border-radius:7px;border:1.5px solid var(--bd);background:var(--bg);color:var(--t2);font-size:12.5px;cursor:pointer;';
+  btnCancel.style.cssText = 'padding:6px 14px;border-radius:7px;border:1.5px solid var(--bd);background:var(--bg);color:var(--t2);font-size:11.5px;cursor:pointer;';
   btnCancel.onclick = () => modal.style.display = 'none';
 
   const btnGo = document.createElement('button');
   btnGo.textContent = '▶ Calculer';
-  btnGo.style.cssText = 'padding:8px 22px;border-radius:7px;border:none;background:var(--acc);color:#fff;font-size:12.5px;font-weight:600;cursor:pointer;';
+  btnGo.style.cssText = 'padding:6px 18px;border-radius:7px;border:none;background:var(--acc);color:#fff;font-size:11.5px;font-weight:600;cursor:pointer;';
   btnGo.onclick = () => {
     gestOptions = { ...opts };
     modal.style.display = 'none';
@@ -4265,7 +4288,10 @@ function gestRunAnalysis(comp, opts) {
     '<ul style="font-size:10px;color:#4a6a8a;margin:4px 0 0 14px;line-height:1.75;">' +
     Object.entries(GEST_OPTION_LABELS).filter(([k])=>opts[k]).map(([,v])=>'<li>'+v+'</li>').join('') +
     '</ul></div>' +
-    '<button onclick="gestOpenModal()" style="flex-shrink:0;padding:4px 12px;border-radius:6px;border:1.5px solid #BEE3F8;background:#fff;color:var(--acc);font-size:11.5px;cursor:pointer;font-weight:500;">⚙ Recalculer</button>' +
+    '<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">' +
+    '<button onclick="gestOpenModal()" style="padding:4px 12px;border-radius:6px;border:1.5px solid #BEE3F8;background:#fff;color:var(--acc);font-size:11.5px;cursor:pointer;font-weight:500;">⚙ Recalculer</button>' +
+    '<button id="gest-export-scores-banner" onclick="gestExportScores()" style="display:none;padding:4px 12px;border-radius:6px;border:1.5px solid #BEE3F8;background:#fff;color:var(--acc);font-size:11.5px;cursor:pointer;font-weight:500;">↓ Scores (JSON)</button>' +
+    '</div>' +
     '</div>';
   comp.appendChild(banner);
 
@@ -4400,7 +4426,11 @@ function gestRunAnalysis(comp, opts) {
     par_entretien: entResults.map(r=>({entretien:r.entName,n_tours:r.N,kappa_presence:r.presScore?parseFloat(r.presScore.toFixed(3)):null,kappa_emotions:r.emoScore?parseFloat(r.emoScore.toFixed(3)):null}))
   };
   const exportBtn = document.getElementById('gest-export-btn');
-  if (exportBtn) exportBtn.style.display = 'block';
+  if (exportBtn) exportBtn.style.display = 'none'; // moved to banner
+  const bannerExportBtn = document.getElementById('gest-export-scores-banner');
+  if (bannerExportBtn) bannerExportBtn.style.display = 'block';
+  const reconPanelWrap = document.getElementById('recon-export-panel-wrap');
+  if (reconPanelWrap) reconPanelWrap.style.display = 'block';
 }
 
 // ── Scores globaux (mode multi-entretiens) ────────────────────────────
@@ -4548,8 +4578,11 @@ function gestRenderSingleAnalysis(comp, annotateurs, tourTextes, gVectors, gPres
   // §5 Tour par tour
   if (opts.tourParTour) {
     const secT = gestMakeSection('§ Comparaison tour par tour');
+    // Ancre sur le titre lui-même (premier enfant = le div titre)
+    const secTTitle = secT.firstChild;
+    if (secTTitle) { secTTitle.id = 'recon-section'; secTTitle.style.scrollMarginTop = '12px'; }
     comp.appendChild(secT);
-    gestAppendTourComparison(secT, tourTextes, vectors, cats);
+    gestAppendTourComparison(secT, tourTextes, vectors, cats, annotateurs);
   }
 
   if (!noScroll) document.getElementById('main').scrollTop = 0;
@@ -5330,58 +5363,404 @@ function gestRenderHeatmap(comp, tourTextes, cats, vectors, annotateurs, presVec
 }
 
 // ── Comparaison tour par tour ─────────────────────────────────────────
-function gestAppendTourComparison(comp, tourTextes, vectors, cats) {
-  const annotateurs=gestFiles.map(f=>f.data.annotateur||f.name);
-  const t=document.createElement('div');t.className='ct';t.style.marginBottom='12px';t.textContent='Comparaison tour par tour';comp.appendChild(t);
-  const allRef=gestFiles[0].data.tours||[];
-  tourTextes.forEach((texte,idx)=>{
-    const refIdx=allRef.findIndex(t=>(t.texte||t.text||'')===texte);
-    const card=document.createElement('div');card.className='cc';card.style.cssText='margin-bottom:12px;padding:14px 18px;';
-    const headerRow=document.createElement('div');headerRow.style.cssText='display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--bd);';
-    const txt=document.createElement('div');txt.style.cssText='font-size:12.5px;color:var(--t1);flex:1;line-height:1.6;';
-    txt.innerHTML='<span style="font-size:10px;font-weight:500;color:var(--pat);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px;">Tour patient '+(idx+1)+'</span>'+texte;
+
+// État de réconciliation — indexé par "tourTexte::fi::annIdx"
+// Valeur : fi (index du fichier choisi) ou null
+let _reconChoix = {};
+let _reconPatTours = [];
+let _reconAnnDataMap = {};
+
+function gestAppendTourComparison(comp, tourTextes, vectors, cats, annotateurs) {
+  if (!annotateurs) annotateurs = gestFiles.map(f => f.data.annotateur || f.name);
+  const K = annotateurs.length;
+
+  // Mapping annotateur -> données du fichier (pour affichage et export)
+  const annDataMap = {};
+  annotateurs.forEach(ann => {
+    const f = gestFiles.find(f => (f.data.annotateur || f.name) === ann);
+    annDataMap[ann] = f ? f.data : null;
+  });
+  const allRef = annDataMap[annotateurs[0]] ? (annDataMap[annotateurs[0]].tours || []) : [];
+
+  // Reset état réconciliation
+  _reconChoix = {};
+  _reconPatTours = [];
+  _reconAnnDataMap = annDataMap;
+
+  // Pour chaque tour patient : détecter accord total entre annotateurs
+  // accord = même absence_emotion ET mêmes émotions (Jaccard=1 ou tous vides)
+  const _reconAccord = {}; // patIdx -> bool
+
+  tourTextes.forEach((texte, patIdx) => {
+    _reconPatTours.push({ texte, patIdx });
+
+    const refIdx = allRef.findIndex(t => (t.texte || t.text || '') === texte);
+
+    // Collecter les états de chaque annotateur pour ce tour
+    const etats = annotateurs.map(ann => {
+      const fData = annDataMap[ann];
+      const fTours = fData ? (fData.tours || []) : [];
+      const fTour = fTours[refIdx] || fTours.find(t => (t.texte || t.text || '') === texte);
+      if (!fTour) return null;
+      const noEmo = fTour.absence_emotion || false;
+      const emos = new Set((fTour.annotations || []).flatMap(a => [
+        ...(a.emotions || []), ...(a.emotions2 || [])
+      ]));
+      return { noEmo, emos };
+    });
+
+    // Accord : tous non-null, même noEmo, et si annotations : Jaccard=1
+    let accord = etats.every(e => e !== null);
+    if (accord) {
+      const ref = etats[0];
+      accord = etats.every(e => e.noEmo === ref.noEmo);
+      if (accord && !ref.noEmo) {
+        const union = new Set(etats.flatMap(e => [...e.emos]));
+        accord = etats.every(e => union.size === e.emos.size && [...e.emos].every(x => union.has(x)));
+      }
+    }
+    _reconAccord[patIdx] = accord;
+    // Auto-choisir le premier annotateur si accord total
+    if (accord) _reconChoix[patIdx] = 0;
+
+    const card = document.createElement('div');
+    card.id = 'recon-card-' + patIdx;
+    card.className = 'cc';
+    card.style.cssText = 'margin-bottom:12px;padding:14px 18px;transition:border-color .2s;' +
+      (accord ? 'opacity:.7;' : '');
+
+    // En-tête de la carte
+    const headerRow = document.createElement('div');
+    headerRow.style.cssText = 'display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--bd);';
+
+    const txt = document.createElement('div');
+    txt.style.cssText = 'font-size:12.5px;color:var(--t1);flex:1;line-height:1.6;';
+    txt.innerHTML = '<span style="font-size:10px;font-weight:500;color:var(--pat);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px;">Tour patient ' + (patIdx + 1) + '</span>' + texte;
     headerRow.appendChild(txt);
-    const badgeWrap=document.createElement('div');badgeWrap.style.cssText='display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;';
-    for(let i=0;i<gestFiles.length;i++)for(let j=i+1;j<gestFiles.length;j++){
-      const sI=new Set(vectors[i][idx]),sJ=new Set(vectors[j][idx]);
-      const inter=[...sI].filter(x=>sJ.has(x)).length,union=new Set([...sI,...sJ]).size;
-      const jacc=union===0?null:inter/union;
-      const bc=jacc===null?'#9CA3AF':jacc>=0.8?'#27AE60':jacc>=0.5?'#F1C40F':jacc>=0.2?'#E67E22':'#C0392B';
-      const badge=document.createElement('div');badge.title='Jaccard — |A∩B|÷|A∪B|';
-      badge.style.cssText='display:flex;align-items:center;gap:5px;background:var(--bg);border-radius:100px;padding:3px 9px;border:1.5px solid '+bc+';';
-      const annI=annotateurs[i].split(' ')[0],annJ=annotateurs[j].split(' ')[0];
-      badge.innerHTML='<span style="font-size:9.5px;color:var(--t3);">'+annI+' / '+annJ+'</span><span style="font-size:11px;font-weight:700;color:'+bc+';font-family:ui-monospace,monospace;">'+(jacc===null?'∅':(jacc*100).toFixed(0)+'%')+'</span>';
+
+    // Badges Jaccard inter-annotateurs
+    const badgeWrap = document.createElement('div');
+    badgeWrap.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;';
+    for (let i = 0; i < K; i++) for (let j = i + 1; j < K; j++) {
+      const sI = new Set(vectors[i][patIdx]), sJ = new Set(vectors[j][patIdx]);
+      const inter = [...sI].filter(x => sJ.has(x)).length, union = new Set([...sI, ...sJ]).size;
+      const jacc = union === 0 ? null : inter / union;
+      const bc = jacc === null ? '#9CA3AF' : jacc >= 0.8 ? '#27AE60' : jacc >= 0.5 ? '#F1C40F' : jacc >= 0.2 ? '#E67E22' : '#C0392B';
+      const badge = document.createElement('div');
+      badge.title = 'Jaccard — |A∩B|÷|A∪B|';
+      badge.style.cssText = 'display:flex;align-items:center;gap:5px;background:var(--bg);border-radius:100px;padding:3px 9px;border:1.5px solid ' + bc + ';';
+      const annI = annotateurs[i].split(' ')[0], annJ = annotateurs[j].split(' ')[0];
+      badge.innerHTML = '<span style="font-size:9.5px;color:var(--t3);">' + annI + ' / ' + annJ + '</span><span style="font-size:11px;font-weight:700;color:' + bc + ';font-family:ui-monospace,monospace;">' + (jacc === null ? '∅' : (jacc * 100).toFixed(0) + '%') + '</span>';
       badgeWrap.appendChild(badge);
     }
-    headerRow.appendChild(badgeWrap);card.appendChild(headerRow);
-    const cols=document.createElement('div');cols.style.cssText='display:grid;grid-template-columns:repeat('+gestFiles.length+',1fr);gap:14px;';
-    gestFiles.forEach((f,fi)=>{
-      const fTours=f.data.tours||[];const fTour=fTours[refIdx]||fTours.find(t=>(t.texte||t.text||'')===texte);
-      const anns=fTour?(fTour.annotations||[]):[];const noEmo=fTour?fTour.absence_emotion:false;
-      const col=document.createElement('div');
-      const head=document.createElement('div');head.style.cssText='font-weight:500;color:var(--acc);margin-bottom:8px;font-size:11px;text-transform:uppercase;';head.textContent=annotateurs[fi];col.appendChild(head);
-      if(noEmo){col.innerHTML+='<span style="font-size:11px;color:var(--t3);font-style:italic;">∅ Absence d\'émotion</span>';}
-      else if(!anns.length){col.innerHTML+='<span style="font-size:11px;color:var(--t3);font-style:italic;">— Non annoté</span>';}
-      else{anns.forEach(ann=>{
-        const emos=[...(ann.emotions||[]).map(id=>{const e=ANN_EMO.find(x=>x.id===id);return e?e.label:id;}),
-          ...(ann.emotions2||[]).map(id=>annEmo2Label(id)),ann.emotionLibre||''].filter(Boolean);
-        const b=document.createElement('div');b.style.cssText='background:var(--bg);border-radius:6px;padding:6px 9px;margin-bottom:6px;border-left:3px solid var(--pat);font-size:12px;';
-        b.innerHTML='<div style="font-weight:500;color:var(--t1);">'+(emos.join(', ')||'—')+'</div>'+
-          '<div style="font-size:10.5px;color:var(--t3);margin-top:2px;">« '+(ann.text||'')+' »</div>'+
-          (ann.polarite?'<div style="font-size:10px;color:var(--t3);">Polarité: '+ann.polarite+'</div>':'')+
-          (ann.intensite?'<div style="font-size:10px;color:var(--t3);">Intensité: '+ann.intensite+'</div>':'')+
-          (ann.annotationType?'<div style="font-size:10px;color:var(--t3);">Type: '+ann.annotationType+'</div>':'');
-        col.appendChild(b);
-      });}
+    // Badge accord global
+    if (accord) {
+      const ab = document.createElement('div');
+      ab.style.cssText = 'font-size:10px;color:#27AE60;padding:2px 8px;border:1px solid #27AE60;border-radius:100px;background:#F0FBF5;white-space:nowrap;';
+      ab.textContent = '✓ Accord';
+      badgeWrap.appendChild(ab);
+    }
+    headerRow.appendChild(badgeWrap);
+    card.appendChild(headerRow);
+
+    // Colonnes annotateurs
+    const cols = document.createElement('div');
+    cols.style.cssText = 'display:grid;grid-template-columns:repeat(' + K + ',1fr);gap:14px;';
+
+    annotateurs.forEach((ann, fi) => {
+      const fData = annDataMap[ann];
+      const fTours = fData ? (fData.tours || []) : [];
+      const fTour = fTours[refIdx] || fTours.find(t => (t.texte || t.text || '') === texte);
+      const anns = fTour ? (fTour.annotations || []) : [];
+      const noEmo = fTour ? fTour.absence_emotion : false;
+
+      const col = document.createElement('div');
+      col.id = 'recon-col-' + patIdx + '-' + fi;
+
+      const head = document.createElement('div');
+      head.style.cssText = 'font-weight:500;color:var(--acc);margin-bottom:8px;font-size:11px;text-transform:uppercase;display:flex;align-items:center;gap:6px;';
+      head.textContent = ann;
+      col.appendChild(head);
+
+      if (noEmo) {
+        const ab = document.createElement('div');
+        ab.style.cssText = 'font-size:11px;color:var(--t3);font-style:italic;margin-bottom:6px;';
+        ab.textContent = '∅ Absence d\'émotion';
+        col.appendChild(ab);
+        col.appendChild(_reconMakeChooseBtn(patIdx, fi, ann, accord));
+      } else if (!anns.length) {
+        const empty = document.createElement('div');
+        empty.style.cssText = 'font-size:11px;color:var(--t3);font-style:italic;margin-bottom:6px;';
+        empty.textContent = '— Non annoté';
+        col.appendChild(empty);
+        col.appendChild(_reconMakeChooseBtn(patIdx, fi, ann, accord));
+      } else {
+        anns.forEach((annotation, ai) => {
+          const emos = [
+            ...(annotation.emotions || []).map(id => { const e = ANN_EMO.find(x => x.id === id); return e ? e.label : id; }),
+            ...(annotation.emotions2 || []).map(id => annEmo2Label(id)),
+            annotation.emotionLibre || ''
+          ].filter(Boolean);
+
+          const b = document.createElement('div');
+          b.style.cssText = 'background:var(--bg);border-radius:6px;padding:7px 10px;margin-bottom:7px;border-left:3px solid var(--pat);font-size:12px;';
+          b.innerHTML =
+            '<div style="font-weight:500;color:var(--t1);margin-bottom:2px;">' + (emos.join(', ') || '—') + '</div>' +
+            '<div style="font-size:10.5px;color:var(--t3);margin-top:1px;">« ' + (annotation.text || '') + ' »</div>' +
+            (annotation.polarite ? '<div style="font-size:10px;color:var(--t3);margin-top:2px;">Polarité : ' + annotation.polarite + '</div>' : '') +
+            (annotation.intensite ? '<div style="font-size:10px;color:var(--t3);">Intensité : ' + annotation.intensite + '</div>' : '') +
+            (annotation.annotationType ? '<div style="font-size:10px;color:var(--t3);">Type : ' + annotation.annotationType + '</div>' : '') +
+            (annotation.comment ? '<div style="font-size:10px;color:var(--t2);margin-top:3px;font-style:italic;border-top:1px solid var(--bd);padding-top:3px;">💬 ' + annotation.comment + '</div>' : '');
+          col.appendChild(b);
+        });
+        col.appendChild(_reconMakeChooseBtn(patIdx, fi, ann, accord));
+      }
+
       cols.appendChild(col);
     });
-    card.appendChild(cols);comp.appendChild(card);
+
+    card.appendChild(cols);
+    comp.appendChild(card);
   });
+
+  // Initialiser la progression
+  _reconUpdateProgress();
+}
+
+// ── Bouton "Choisir" ─────────────────────────────────────────────────
+function _reconMakeChooseBtn(patIdx, fi, annotateur, accord) {
+  const btn = document.createElement('button');
+  btn.id = 'recon-choose-' + patIdx + '-' + fi;
+  const isChosen = _reconChoix[patIdx] === fi;
+  if (accord) {
+    btn.style.cssText = 'margin-top:4px;padding:4px 12px;border-radius:6px;font-size:11px;font-weight:500;font-family:system-ui,sans-serif;border:1.5px solid var(--bd);background:var(--bg);color:var(--t3);cursor:default;opacity:.45;';
+    btn.textContent = '✓ Accord';
+    btn.disabled = true;
+    btn.title = 'Accord total entre annotateurs — sélection automatique';
+  } else {
+    btn.style.cssText = 'margin-top:4px;padding:4px 12px;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;font-family:system-ui,sans-serif;transition:all .12s;border:1.5px solid ' +
+      (isChosen ? 'var(--acc)' : 'var(--bd)') + ';background:' +
+      (isChosen ? 'var(--acc)' : 'var(--bg)') + ';color:' +
+      (isChosen ? '#fff' : 'var(--t2)') + ';';
+    btn.textContent = isChosen ? '✓ Choisi' : '⚖ Choisir';
+    btn.title = 'Retenir la version de ' + annotateur + ' pour ce tour';
+    btn.onclick = () => _reconChoisir(patIdx, fi);
+  }
+  return btn;
+}
+
+// ── Export final réconcilié ───────────────────────────────────────────
+
+function _reconChoisir(patIdx, fi) {
+  _reconChoix[patIdx] = (_reconChoix[patIdx] === fi) ? null : fi;
+  const chosen = _reconChoix[patIdx];
+  const annotateurs = Object.keys(_reconAnnDataMap);
+
+  annotateurs.forEach((_, fj) => {
+    const btn = document.getElementById('recon-choose-' + patIdx + '-' + fj);
+    if (!btn || btn.disabled) return;
+    const isMine = fj === chosen;
+    btn.style.borderColor = isMine ? 'var(--acc)' : 'var(--bd)';
+    btn.style.background  = isMine ? 'var(--acc)' : 'var(--bg)';
+    btn.style.color       = isMine ? '#fff'        : 'var(--t2)';
+    btn.textContent       = isMine ? '✓ Choisi'    : '⚖ Choisir';
+  });
+
+  const card = document.getElementById('recon-card-' + patIdx);
+  if (card) card.style.borderColor = chosen !== null ? 'var(--acc)' : 'var(--bd)';
+
+  _reconUpdateProgress();
+}
+
+function _reconUpdateProgress() {
+  const total = _reconPatTours.length;
+  const done  = _reconPatTours.filter(({patIdx}) =>
+    _reconChoix[patIdx] !== undefined && _reconChoix[patIdx] !== null
+  ).length;
+  const pct   = total ? Math.round(done / total * 100) : 0;
+  const ready = done === total && total > 0;
+
+  const ptxt = document.getElementById('recon-inline-progress-txt');
+  const pbar = document.getElementById('recon-inline-progress-bar');
+  if (ptxt) ptxt.textContent = done + ' / ' + total + ' tours validés' + (ready ? ' ✓' : '');
+  if (pbar) { pbar.style.width = pct + '%'; pbar.style.background = ready ? '#27AE60' : 'var(--acc)'; }
+}
+
+function reconInlineExport() {
+  const annotateurs = Object.keys(_reconAnnDataMap);
+  const undone = _reconPatTours.filter(({patIdx}) =>
+    _reconChoix[patIdx] === undefined || _reconChoix[patIdx] === null
+  );
+
+  if (undone.length > 0) {
+    // Modale HTML avec 3 vrais boutons
+    _reconShowUndoneModal(annotateurs, undone, () => _doReconExport(annotateurs));
+    return;
+  }
+  _doReconExport(annotateurs);
+}
+
+function _reconShowUndoneModal(annotateurs, undone, onConfirm) {
+  // Supprimer une ancienne modale si elle existe
+  const old = document.getElementById('recon-undone-modal');
+  if (old) old.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'recon-undone-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:400;background:rgba(26,32,53,.55);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;';
+
+  const box = document.createElement('div');
+  box.style.cssText = 'background:var(--w);border:1px solid var(--bd);border-radius:12px;padding:24px 28px;width:min(480px,92vw);box-shadow:0 20px 60px rgba(0,0,0,.2);';
+
+  // Titre
+  const ttl = document.createElement('div');
+  ttl.style.cssText = 'font-size:14px;font-weight:600;color:var(--t1);margin-bottom:8px;';
+  ttl.textContent = '⚠ ' + undone.length + ' tour(s) non réconcilié(s)';
+  box.appendChild(ttl);
+
+  // Description
+  const desc = document.createElement('div');
+  desc.style.cssText = 'font-size:12px;color:var(--t2);margin-bottom:18px;line-height:1.6;';
+  desc.textContent = 'Certains tours n\'ont pas encore de version choisie. Que souhaitez-vous faire ?';
+  box.appendChild(desc);
+
+  // Option 1 : continuer le travail
+  const btnContinue = document.createElement('button');
+  btnContinue.style.cssText = 'width:100%;padding:9px 14px;margin-bottom:8px;border-radius:8px;border:1.5px solid var(--bd);background:var(--bg);color:var(--t1);font-size:12.5px;font-weight:500;cursor:pointer;font-family:system-ui,sans-serif;text-align:left;';
+  btnContinue.innerHTML = '<strong>Continuer le travail</strong> <span style="font-size:11px;color:var(--t3);display:block;margin-top:2px;">Fermer cette boîte et compléter les choix manuellement</span>';
+  btnContinue.onclick = () => overlay.remove();
+  box.appendChild(btnContinue);
+
+  // Option 2 : choisir par radio
+  const opt2wrap = document.createElement('div');
+  opt2wrap.style.cssText = 'border:1.5px solid var(--bd);border-radius:8px;padding:10px 14px;margin-bottom:8px;';
+
+  const opt2title = document.createElement('div');
+  opt2title.style.cssText = 'font-size:12.5px;font-weight:500;color:var(--t1);margin-bottom:8px;';
+  opt2title.textContent = 'Choisir un annotateur par défaut pour les tours manquants';
+  opt2wrap.appendChild(opt2title);
+
+  annotateurs.forEach((ann, i) => {
+    const lbl = document.createElement('label');
+    lbl.style.cssText = 'display:flex;align-items:center;gap:8px;font-size:12px;color:var(--t2);padding:4px 6px;border-radius:5px;cursor:pointer;margin-bottom:3px;';
+    lbl.onmouseenter = () => lbl.style.background = 'var(--bg)';
+    lbl.onmouseleave = () => lbl.style.background = '';
+    const radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.name = 'recon-default-ann';
+    radio.value = String(i);
+    radio.style.cssText = 'accent-color:var(--acc);cursor:pointer;';
+    if (i === 0) radio.checked = true;
+    lbl.appendChild(radio);
+    const span = document.createElement('span');
+    span.textContent = ann;
+    lbl.appendChild(span);
+    opt2wrap.appendChild(lbl);
+  });
+
+  const btnApply = document.createElement('button');
+  btnApply.style.cssText = 'margin-top:10px;width:100%;padding:7px 14px;border-radius:6px;border:none;background:var(--acc);color:#fff;font-size:12px;font-weight:500;cursor:pointer;font-family:system-ui,sans-serif;';
+  btnApply.textContent = 'Appliquer et exporter';
+  btnApply.onclick = () => {
+    const selected = opt2wrap.querySelector('input[name="recon-default-ann"]:checked');
+    const fi = selected ? parseInt(selected.value) : 0;
+    undone.forEach(({patIdx}) => { _reconChoix[patIdx] = fi; });
+    _reconUpdateProgress();
+    overlay.remove();
+    onConfirm();
+  };
+  opt2wrap.appendChild(btnApply);
+  box.appendChild(opt2wrap);
+
+  // Option 3 : abandonner
+  const btnAbandon = document.createElement('button');
+  btnAbandon.style.cssText = 'width:100%;padding:8px 14px;border-radius:8px;border:1px solid var(--bd);background:none;color:var(--t3);font-size:12px;cursor:pointer;font-family:system-ui,sans-serif;';
+  btnAbandon.textContent = 'Abandonner l\'export';
+  btnAbandon.onclick = () => overlay.remove();
+  box.appendChild(btnAbandon);
+
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  // Fermer en cliquant sur l'overlay
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+function _doReconExport(annotateurs) {
+  const rec = (prompt('Identifiant du réconciliateur (optionnel) :') || '').trim();
+  const dataRef = _reconAnnDataMap[annotateurs[0]];
+  if (!dataRef) { alert('Données introuvables.'); return; }
+
+  const refTours = dataRef.tours || [];
+  let patCounter = 0;
+  const toursOut = refTours.map((refTour, ti) => {
+    const loc = refTour.locuteur || 'patient';
+    if (loc !== 'patient') {
+      return { index: ti, locuteur: loc, texte: refTour.texte || '', absence_emotion: false, annotations: [] };
+    }
+    const patIdx = patCounter++;
+    const chosenFi = _reconChoix[patIdx] ?? 0;
+    const chosenAnn = annotateurs[chosenFi] || annotateurs[0];
+    const chosenData = _reconAnnDataMap[chosenAnn];
+    const chosenTours = chosenData ? (chosenData.tours || []) : [];
+    const chosenTour = chosenTours[ti] || chosenTours.find(t => (t.texte || '') === (refTour.texte || ''));
+    return {
+      index: ti, locuteur: loc,
+      texte: refTour.texte || '',
+      absence_emotion: chosenTour ? chosenTour.absence_emotion : false,
+      annotations: chosenTour ? (chosenTour.annotations || []) : [],
+      _recon_source: chosenAnn
+    };
+  });
+
+  const out = {
+    date: new Date().toISOString(),
+    annotateur: rec || ('Réconciliation (' + annotateurs.join(' + ') + ')'),
+    protocole: {
+      contexte_annotation: 'tour_courant + tour_precedent',
+      note: 'Le tour suivant peut guider l\'annotateur humain mais est exclu des features d\'entraînement pour préserver le réalisme de la prédiction en temps réel.',
+      reconciliation: { sources: annotateurs, date: new Date().toISOString() }
+    },
+    tours: toursOut
+  };
+
+  const slug = rec ? '_' + rec.replace(/\s+/g, '_') : '';
+  const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'reconciliation_' + new Date().toISOString().slice(0, 10) + slug + '.json';
+  a.click();
+
+  // ── Recalcul des scores avec le fichier réconcilié ──────────────────
+  // Remplacer les fichiers sources par la version réconciliée dans gestFiles
+  const reconName = out.annotateur;
+  gestFiles = [{
+    name: 'reconciliation.json',
+    _dedupKey: 'reconciliation.json',
+    data: out
+  }];
+  // Notifier l'utilisateur et recalculer
+  setTimeout(() => {
+    const go = confirm(
+      'Fichier réconcilié exporté ✓\n\n' +
+      'Voulez-vous recalculer les scores avec ce fichier seul ?\n' +
+      '(les fichiers sources seront remplacés)'
+    );
+    if (go) {
+      gestRenderFiles();
+      // Recharger N autres fichiers si nécessaire — invitation à recharger
+      setTimeout(() => {
+        alert('Le fichier réconcilié est maintenant le seul fichier chargé.\nChargez un fichier de référence supplémentaire pour comparer les scores.');
+      }, 300);
+    } else {
+      // Restaurer les fichiers originaux
+      gestFiles = annotateurs.map((ann, i) => ({
+        name: ann + '.json',
+        _dedupKey: ann + '.json',
+        data: _reconAnnDataMap[ann]
+      }));
+      gestRenderFiles();
+    }
+  }, 500);
 }
 
 </script>
-
-
-
-
-  
