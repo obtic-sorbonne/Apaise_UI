@@ -430,36 +430,10 @@ input[type=range].plut-emo-sl::-moz-range-track { background:transparent; }
 .ann-no-emo-btn.active{background:#F0F4FF;border-color:var(--acc);color:var(--acc);}
 .ann-badge{font-size:10.5px;padding:2px 8px;border-radius:100px;background:var(--pat-l);color:var(--pat);border:1px solid #b3d9ca;}
 
-/* panneau annotation flottant */
-.ann-panel{position:fixed;right:0;top:0;width:450px;background:var(--w);border-left:1.5px solid var(--acc);box-shadow:-6px 0 28px rgba(0,0,0,.10);z-index:200;overflow:hidden;display:none;height:100vh;}
-.ann-panel.open{display:flex;flex-direction:column;}
-.ann-panel-hd{background:var(--acc);color:#fff;padding:11px 16px;display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:500;flex-shrink:0;}
-.ann-panel-hd button{background:none;border:none;color:#fff;cursor:pointer;font-size:16px;line-height:1;opacity:.8;}
-.ann-panel-hd button:hover{opacity:1;}
-.ann-panel-body{padding:14px 16px;overflow-y:auto;flex:1;}
-.ann-panel-sel{font-size:12px;color:var(--t2);background:var(--bg);border-radius:6px;padding:6px 10px;margin-bottom:12px;line-height:1.5;font-style:italic;}
-.ann-section{margin-bottom:12px;}
-.ann-section-title{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.8px;color:var(--t3);margin-bottom:6px;}
-.ann-chips{display:flex;flex-wrap:wrap;gap:5px;}
-.ann-chip{font-size:10px;padding:1px 5px;border-radius:100px;border:1.5px solid var(--bd);background:var(--bg);cursor:pointer;transition:all .1s;color:var(--t2);}
-.ann-chip:hover{border-color:#aaa;color:var(--t1);}
-.ann-chip.on{border-color:var(--acc);background:#EEF2FF;color:var(--acc);font-weight:500;}
-.ann-chip.emo-on{color:#fff;border-color:transparent;}
-.ann-comment{width:100%;padding:7px 10px;border:1.5px solid var(--bd);border-radius:7px;font-size:12.5px;font-family:system-ui,sans-serif;color:var(--t1);resize:none;height:36px;min-height:36px;background:var(--bg);}
-.ann-comment:focus{outline:none;border-color:var(--acc);}
-.ann-validate-btn{width:100%;padding:9px;background:var(--pat);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:system-ui,sans-serif;margin-top:4px;}
-.ann-validate-btn:hover{opacity:.88;}
 .ann-tag-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;}
 #ann-export-fab{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:150;display:none;background:var(--pat);color:#fff;border:none;border-radius:100px;padding:11px 24px;font-size:13px;font-weight:500;font-family:system-ui,sans-serif;cursor:pointer;box-shadow:0 4px 18px rgba(0,0,0,.18);transition:opacity .15s,transform .15s;}
 #ann-export-fab:hover{opacity:.88;transform:translateX(-50%) translateY(-2px);}
 #ann-export-fab.visible{display:block;}
-.ann-role-grid{width:100%;border-collapse:collapse;font-size:10.5px;}
-.ann-role-grid th{font-weight:500;color:var(--t3);padding:3px 4px;text-align:center;font-size:10.5px;border-bottom:1px solid var(--bd);}
-.ann-role-grid th:first-child{text-align:left;}
-.ann-role-grid td{padding:3px 4px;text-align:center;border-bottom:1px solid var(--bg);}
-.ann-role-grid td:first-child{text-align:left;color:var(--t3);font-weight:500;white-space:nowrap;font-size:10.5px;}
-.ann-role-grid input[type=radio]{accent-color:var(--acc);width:11px;height:11px;cursor:pointer;}
-.ann-role-grid tr:hover td{background:var(--bg);}
 </style>
 </head>
 <body>
@@ -840,6 +814,8 @@ input[type=range].plut-emo-sl::-moz-range-track { background:transparent; }
             <option value="gemini-1.5-flash" data-ep="https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent" disabled style="color:#bbb;">gemini-1.5-flash (Google)</option>
           </optgroup>
         </select>
+        <div></div>
+        <div id="llm-model-status" style="font-size:11.5px;margin-top:-4px;min-height:1.4em;"></div>
         <label style="color:var(--t3);font-weight:500;">Clé API</label>
         <input id="llm-apikey" type="password" placeholder="Non applicable — usage local uniquement" disabled
           style="padding:6px 10px;border:1px solid var(--bd);border-radius:6px;background:#f3f4f6;color:var(--t3);font-size:12px;font-family:ui-monospace,monospace;cursor:not-allowed;">
@@ -862,10 +838,14 @@ input[type=range].plut-emo-sl::-moz-range-track { background:transparent; }
       </div>
     </div>
     <div class="cc" style="padding:20px 24px;">
-      <div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px;">Démarrage automatique (Windows)</div>
-      <p style="font-size:12px;color:var(--t3);line-height:1.6;margin-bottom:12px;">Génère un script <code>.bat</code> qui démarre Ollama avec CORS ouvert, puis ouvre une fenêtre de navigation pour choisir votre fichier.</p>
-      <button onclick="llmDownloadBatch()" class="eb" style="font-size:12px;">↓ Télécharger start_apaise.bat</button>
-      <div style="font-size:11px;color:var(--t3);margin-top:8px;">Après téléchargement : clic droit → Propriétés → cocher <b>Débloquer</b> → OK.</div>
+      <div style="font-size:12px;font-weight:600;color:var(--t1);margin-bottom:8px;">Démarrage automatique</div>
+      <p style="font-size:12px;color:var(--t3);line-height:1.6;margin-bottom:12px;">Génère un script qui démarre Ollama avec CORS ouvert, puis ouvre une fenêtre de navigation pour choisir votre fichier.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="llmDownloadBatch('windows')" class="eb" style="font-size:12px;">↓ Windows (.bat)</button>
+        <button onclick="llmDownloadBatch('mac')" class="eb" style="font-size:12px;">↓ macOS (.command)</button>
+        <button onclick="llmDownloadBatch('linux')" class="eb" style="font-size:12px;">↓ Linux (.sh)</button>
+      </div>
+      <div style="font-size:11px;color:var(--t3);margin-top:8px;">Après téléchargement — Windows : clic droit → Propriétés → Débloquer → OK. Mac/Linux : <code>chmod +x</code> puis double-clic.</div>
     </div>
   </div>
 </div>
@@ -1068,107 +1048,6 @@ input[type=range].plut-emo-sl::-moz-range-track { background:transparent; }
   </div>
 </div>
 
-<!-- Panneau d'annotation flottant -->
-<div class="ann-panel" id="ann-panel">
-  <div class="ann-panel-hd">
-    <span id="ann-panel-title">Annoter la sélection</span>
-    <div style="display:flex;align-items:center;gap:8px;">
-      <button onclick="annToggleMode()" id="ann-mode-btn" title="Basculer entre mode guidé et mode libre"
-        style="font-size:10px;padding:2px 9px;border:1px solid rgba(255,255,255,.4);border-radius:100px;opacity:1;background:rgba(255,255,255,.15);">
-        Mode libre
-      </button>
-      <button onclick="annClosePanel()" title="Fermer">✕</button>
-    </div>
-  </div>
-
-  <!-- Extrait sélectionné -->
-  <div style="padding:10px 16px 0;flex-shrink:0;">
-    <!-- Mode littérale / inférée -->
-    <div style="display:flex;gap:6px;margin-bottom:10px;">
-      <button id="ann-mode-litterale" onclick="annSetAnnotationMode('litterale')"
-        style="flex:1;padding:5px 8px;border-radius:100px;border:1.5px solid var(--bd);background:var(--bg);cursor:pointer;font-size:11.5px;font-family:system-ui,sans-serif;color:var(--t2);transition:all .12s;">
-        Littérale ○
-      </button>
-      <button id="ann-mode-inferee" onclick="annSetAnnotationMode('inferee')"
-        style="flex:1;padding:5px 8px;border-radius:100px;border:1.5px solid var(--bd);background:var(--bg);cursor:pointer;font-size:11.5px;font-family:system-ui,sans-serif;color:var(--t2);transition:all .12s;">
-        Inférée ○
-      </button>
-    </div>
-    <div class="ann-panel-sel" id="ann-panel-sel">—</div>
-  </div>
-
-  <!-- MODE GUIDÉ -->
-  <div id="ann-wizard" style="display:none;flex:1;display:none;flex-direction:column;">
-    <!-- Barre de progression -->
-    <div style="padding:10px 16px 0;flex-shrink:0;">
-      <div style="display:flex;gap:4px;margin-bottom:4px;" id="ann-wiz-dots"></div>
-      <div style="font-size:10px;color:var(--t3);" id="ann-wiz-step-label"></div>
-    </div>
-    <!-- Contenu de l'étape -->
-    <div style="flex:1;overflow-y:auto;padding:14px 16px;" id="ann-wiz-content"></div>
-    <!-- Nav bas -->
-    <div style="padding:12px 16px;border-top:1px solid var(--bd);display:flex;gap:8px;flex-shrink:0;">
-      <button id="ann-wiz-back" onclick="annWizBack()"
-        style="flex:1;padding:8px;border:1.5px solid var(--bd);border-radius:8px;background:var(--bg);cursor:pointer;font-family:system-ui,sans-serif;font-size:13px;color:var(--t2);">
-        ← Retour
-      </button>
-      <button id="ann-wiz-next" onclick="annWizNext()"
-        style="flex:2;padding:8px;border:none;border-radius:8px;background:var(--acc);color:#fff;cursor:pointer;font-family:system-ui,sans-serif;font-size:13px;font-weight:500;">
-        Suivant →
-      </button>
-    </div>
-  </div>
-
-  <!-- MODE LIBRE -->
-  <div id="ann-freeform" class="ann-panel-body" style="display:none;">
-    <!-- Émotions -->
-    <div class="ann-section">
-      <div class="ann-section-title" style="display:flex;align-items:center;justify-content:space-between;">
-<span id="ann-emo-required" style="font-size:10px;color:#C0392B;display:none;">⚠ obligatoire</span>
-      </div>
-      <div style="display:flex;gap:6px;margin-bottom:8px;">
-        <button onclick="annToggleSubSection('roue')"   id="ann-btn-roue"   style="flex:1;padding:2px 8px;border-radius:100px;border:1.5px solid var(--bd);background:var(--bg);cursor:pointer;font-size:11.5px;font-family:system-ui,sans-serif;color:var(--t2);">Roue</button>
-        <button onclick="annToggleSubSection('dyades')" id="ann-btn-dyades" style="flex:1;padding:2px 8px;border-radius:100px;border:1.5px solid var(--bd);background:var(--bg);cursor:pointer;font-size:11.5px;font-family:system-ui,sans-serif;color:var(--t2);">Dyades</button>
-      </div>
-      <div id="ann-sub-roue"   style="display:none;"></div>
-      <div id="ann-sub-dyades" style="display:none;"></div>
-      <input type="text" id="ann-emo-free" placeholder="Émotion non listée (saisie libre)…"
-        style="margin-top:8px;width:100%;padding:5px 9px;border:1.5px solid var(--bd);border-radius:6px;font-size:12px;font-family:system-ui,sans-serif;background:var(--bg);color:var(--t1);box-sizing:border-box;"
-        oninput="annPanelState.emotionLibre=this.value">
-    </div>
-        <!-- Polarité -->
-    <div class="ann-section">
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-      <div class="ann-section-title" style="margin-bottom:0;white-space:nowrap;">Polarité</div>
-      <div class="ann-chips" id="ann-chips-pol"></div>
-      </div>
-    </div>
-    <!-- Intensité -->
-    <div class="ann-section">
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <div class="ann-section-title" style="margin-bottom:0;white-space:nowrap;">Intensité</div>
-        <div class="ann-chips" id="ann-chips-int"></div>
-      </div>
-    </div>
-    <!-- Modalisation -->
-    <div class="ann-section">
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <div class="ann-section-title" style="margin-bottom:0;white-space:nowrap;">Modalisation</div>
-        <div class="ann-chips" id="ann-chips-mod"></div>
-      </div>
-    </div>
-    <!-- Rôles -->
-    <div class="ann-section">
-      <div id="ann-roles-free"></div>
-    </div>
-    <!-- Commentaire -->
-    <div class="ann-section">
-      <textarea class="ann-comment" id="ann-comment" placeholder="Observations, doutes, contexte…"></textarea>
-    </div>
-    <button class="ann-validate-btn" onclick="annValidate()">✓ Valider l'annotation</button>
-  </div>
-</div>
-
 <!-- ─── GESTION DES ANNOTATIONS ─── -->
 <div id="view-gestion" class="view">
   <div class="ph">
@@ -1360,9 +1239,6 @@ function navigate(view,params={}){
   }
   const footer = document.getElementById('corpus-footer');
   if(footer) footer.style.display = (view === 'exploration') ? '' : 'none';
-  // Fermer le panneau d'annotation flottant en changeant de page
-  const panel = document.getElementById('ann-panel');
-  if(panel) panel.classList.remove('open');
   document.getElementById('main').scrollTop=0;
 }
 
@@ -2242,10 +2118,10 @@ document.addEventListener('DOMContentLoaded',()=>{
      {lb:'Remords',      src:'Tristesse + Dégoût',       e1:4,e2:5,a:112.5},{lb:'Mépris',        src:'Dégoût + Colère',         e1:5,e2:6,a:157.5},
      {lb:'Agressivité',  src:'Colère + Anticipation',    e1:6,e2:7,a:202.5},{lb:'Optimisme',     src:'Anticipation + Joie',     e1:7,e2:0,a:247.5}],
     [{lb:'Culpabilité',  src:'Joie + Peur',              e1:0,e2:2,a:-45  },{lb:'Curiosité',     src:'Confiance + Surprise',    e1:1,e2:3,a:0    },
-     {lb:'Désespoir',    src:'Peur + Tristesse',          e1:2,e2:4,a:45   },{lb:'Incrédulité',   src:'Surprise + Dégoût',       e1:3,e2:5,a:90   },
-     {lb:'Envie',        src:'Tristesse + Colère',        e1:4,e2:6,a:135  },{lb:'Cynisme',       src:'Dégoût + Anticipation',   e1:5,e2:7,a:180  },
-     {lb:'Fierté',       src:'Colère + Joie',             e1:6,e2:0,a:225  },{lb:'Espoir',        src:'Anticipation + Confiance',e1:7,e2:1,a:270  }],
-    [{lb:'Enchantement', src:'Joie + Surprise',           e1:0,e2:3,a:-22.5},{lb:'Sentimentalité',src:'Confiance + Tristesse',   e1:1,e2:4,a:22.5 },
+     {lb:'Désespoir',    src:'Peur + Tristesse',          e1:2,e2:4,a:45   },{lb:'Surprise et rejet',   src:'Surprise + Dégoût',       e1:3,e2:5,a:90   },
+     {lb:'Jalousie',        src:'Tristesse + Colère',        e1:4,e2:6,a:135  },{lb:'Méfiance et dégoût',       src:'Dégoût + Anticipation',   e1:5,e2:7,a:180  },
+     {lb:'Fierté (orgueil)',       src:'Colère + Joie',             e1:6,e2:0,a:225  },{lb:'Espoir',        src:'Anticipation + Confiance',e1:7,e2:1,a:270  }],
+    [{lb:'Enchantement', src:'Joie + Surprise',           e1:0,e2:3,a:-22.5},{lb:'Tendresse et tristesse',src:'Confiance + Tristesse',   e1:1,e2:4,a:22.5 },
      {lb:'Honte',        src:'Peur + Dégoût',             e1:2,e2:5,a:67.5 },{lb:'Indignation',   src:'Surprise + Colère',       e1:3,e2:6,a:112.5},
      {lb:'Pessimisme',   src:'Tristesse + Anticipation',  e1:4,e2:7,a:157.5},{lb:'Morbidité',     src:'Dégoût + Joie',           e1:5,e2:0,a:202.5},
      {lb:'Dominance',    src:'Colère + Confiance',        e1:6,e2:1,a:247.5},{lb:'Anxiété',       src:'Anticipation + Peur',     e1:7,e2:2,a:292.5}],
@@ -2527,6 +2403,14 @@ function updateFooter(){
 setInterval(updateFooter,1000);
 updateFooter();
 
+// Vérifier la disponibilité du modèle LLM sélectionné par défaut
+(function llmInitModelStatus(){
+  const sel = document.getElementById('llm-model2');
+  if (!sel) return;
+  const opt = sel.options[sel.selectedIndex];
+  llmCheckModelAvailability(sel.value, opt ? opt.getAttribute('data-ep') : null);
+})();
+
 // ══════════════════════════════════════════
 //  ANNOTATION MANUELLE
 // ══════════════════════════════════════════
@@ -2541,6 +2425,48 @@ const ANN_EMO = [
   { id:'confiance',   label:'Confiance',    color:'#27AE60' },
   { id:'degout',      label:'Dégoût',       color:'#7F8C8D' },
 ];
+const ANN_ROUE = [
+  { weak:'Sérénité',    basic:{id:'joie',        label:'Joie',         color:'#E6A817'}, strong:'Extase'          },
+  { weak:'Acceptation', basic:{id:'confiance',    label:'Confiance',    color:'#27AE60'}, strong:'Admiration'      },
+  { weak:'Appréhension',basic:{id:'peur',         label:'Peur',         color:'#7B5EA7'}, strong:'Terreur'         },
+  { weak:'Distraction', basic:{id:'surprise',     label:'Surprise',     color:'#16A085'}, strong:'Étonnement'      },
+  { weak:'Songerie',    basic:{id:'tristesse',    label:'Tristesse',    color:'#4E72D6'}, strong:'Chagrin'         },
+  { weak:'Ennui',       basic:{id:'degout',       label:'Dégoût',       color:'#7F8C8D'}, strong:'Aversion'        },
+  { weak:'Contrariété', basic:{id:'colere',       label:'Colère',       color:'#C0392B'}, strong:'Rage'            },
+  { weak:'Intérêt',     basic:{id:'anticipation', label:'Anticipation', color:'#D35400'}, strong:'Vigilance'       },
+];
+
+const ANN_DYADES = [
+  ['Amour','Tendresse et tristesse','Fierté (orgueil)','Espoir','Optimisme','Allégresse'],
+  ['Soumission','Puissance et autorité','Jalousie'],
+  ['Effroi','Anxiété','Désespoir','Pessimisme','Morbidité'],
+  ['Honte','Remords','Culpabilité'],
+  ['Indignation','Agressivité','Mépris','Méfiance et dégoût'],
+  ['Curiosité','Surprise et rejet','Désappointement'],
+];
+
+// Compatibilité : retrouver le label d'une émotion secondaire par son id
+function annEmo2Label(id) {
+  // Format: sec_label_normalise
+  if (!id) return id;
+  const fromId = id.replace(/^sec_/, '').replace(/_/g, ' ');
+  // Chercher dans Roue (weak/strong)
+  for (const row of ANN_ROUE) {
+    if (row.weak.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s/g,'_') === id.replace(/^sec_/,''))
+      return row.weak;
+    if (row.strong.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s/g,'_') === id.replace(/^sec_/,''))
+      return row.strong;
+  }
+  // Chercher dans Dyades
+  for (const group of ANN_DYADES) {
+    for (const label of group) {
+      if (label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s/g,'_') === id.replace(/^sec_/,''))
+        return label;
+    }
+  }
+  // Fallback : remettre en forme l'id
+  return fromId.charAt(0).toUpperCase() + fromId.slice(1);
+}
 const ANN_POL = ['Neutre','Positive','Négative','Indéterminée'];
 const ANN_INT = ['Normale','Faible','Forte','Indéterminée'];
 const ANN_MOD = ['Négation','Incertitude / Conditionnel'];
@@ -2550,6 +2476,10 @@ const ANN_ROLE_OPTS = [
   { value:'Tiers mentionné', label:'Tiers'      },
   { value:'Indéterminé',     label:'Indéterminé'},
 ];
+function annRoleLabelFor(value) {
+  const opt = ANN_ROLE_OPTS.find(o => o.value === value);
+  return opt ? opt.label : value;
+}
 const ANN_ROLES = [
   { id:'experient', label:'Expérient', title:"Qui ressent l'émotion" },
   { id:'source',    label:'Source',    title:"Qui exprime ou rapporte cette émotion" },
@@ -2607,38 +2537,9 @@ setInterval(() => {
 
 // Restaurer au chargement
 window.addEventListener('DOMContentLoaded', () => setTimeout(annRestoreState, 100));
-let annPanelState = { turnIdx: null, wordIndices: [], emotions: [], emotions2: [], emotionLibre: '', emotionLitterale: null, emotionInferee: null, polarite: null, intensite: null, modificateurs: [], experient: null, cible: null, source: null, comment: '', pendingGroupId: null, editingIndex: null };
+let annPanelState = { turnIdx: null, wordIndices: [], emotions: [], emotionLibre: '', polarite: null, intensite: null, modificateurs: [], dyades: { primaires: [], secondaires: [], tertiaires: [] }, experient: null, cible: null, source: null, comment: '', pendingGroupId: null, editingIndex: null };
 let annCurrentSelection = { turnIdx: null };
-let annAnnotationMode = 'litterale'; // actif par défaut
-
 // ── Chargement ──
-
-function annSetAnnotationMode(mode) {
-  if (mode !== '__sync__') {
-    annAnnotationMode = (annAnnotationMode === mode) ? null : mode;
-  }
-
-  const btnLit = document.getElementById('ann-mode-litterale');
-  const btnInf = document.getElementById('ann-mode-inferee');
-
-  const styleBtn = (btn, label, active) => {
-    if (!btn) return;
-    btn.style.background  = active ? 'var(--acc)' : 'var(--bg)';
-    btn.style.borderColor = active ? 'var(--acc)' : 'var(--bd)';
-    btn.style.color       = active ? '#fff'        : 'var(--t2)';
-    btn.style.fontWeight  = active ? '500'          : '';
-    btn.textContent       = label + (active ? ' ●' : ' ○');
-  };
-
-  styleBtn(btnLit, 'Littérale', annAnnotationMode === 'litterale');
-  styleBtn(btnInf, 'Inférée',   annAnnotationMode === 'inferee');
-
-  // Mettre à jour le panneau si déjà ouvert
-  if (annPanelState.turnIdx !== null) {
-    annPanelState.emotionLitterale = annAnnotationMode === 'litterale' ? 'Oui' : null;
-    annPanelState.emotionInferee   = annAnnotationMode === 'inferee'   ? 'Oui' : null;
-  }
-}
 
 function annLoad() {
   const raw = document.getElementById('ann-raw-input').value.trim();
@@ -2928,57 +2829,145 @@ function annWordClick(span, ti) {
   else annClosePanel();
 }
 
-function annOpenPanel(ti, selectedSpans) {
+var _annPopupWin = null;
+var _annPopupToken = null;
+
+window.addEventListener('message', function(e){
+  if (!e.data || e.data.type !== 'ann_popup_validate') return;
+  if (e.data.token && _annPopupToken && e.data.token !== _annPopupToken) return; // message d'une ancienne popup, ignorer
+  if (typeof window._annPopupCallback === 'function') {
+    window._annPopupCallback(e.data.payload);
+  }
+});
+
+function annOpenPanel(ti, selectedSpans, initialAnn, editingIndex) {
+  // Close existing popup if open
+  if (_annPopupWin && !_annPopupWin.closed) {
+    _annPopupWin.close();
+  }
+
   const words = selectedSpans.map(s => s.textContent);
   const wordIndices = selectedSpans.map(s => parseInt(s.dataset.word));
-
-  // Construire l'affichage avec [...] pour les sauts
   const displayParts = [];
   for (let i = 0; i < words.length; i++) {
-    if (i > 0 && wordIndices[i] > wordIndices[i-1] + 1) {
-      displayParts.push('[…]');
-    }
+    if (i > 0 && wordIndices[i] > wordIndices[i-1] + 1) displayParts.push('[…]');
     displayParts.push(words[i]);
   }
   const displayText = '« ' + displayParts.join(' ') + ' »';
 
   annPanelState = {
     turnIdx: ti, wordIndices,
-    emotions: [], emotions2: [], emotionLibre: '',
-    emotionLitterale: annAnnotationMode === 'litterale' ? 'Oui' : null,
-    emotionInferee:   annAnnotationMode === 'inferee'   ? 'Oui' : null,
-    polarite: null, intensite: null, modificateurs: [],
-    experient: null, cible: null, source: null,
-    comment: '',
-    pendingGroupId: null,
-    editingIndex: null
+    emotions: initialAnn ? [...(initialAnn.emotions||[])] : [],
+    emotionLibre: initialAnn ? (initialAnn.emotionLibre||'') : '',
+    polarite: initialAnn ? (initialAnn.polarite||null) : null,
+    intensite: initialAnn ? (initialAnn.intensite||null) : null,
+    modificateurs: initialAnn ? [...(initialAnn.modificateurs||[])] : [],
+    dyades: initialAnn ? (initialAnn.dyades || { primaires: [], secondaires: [], tertiaires: [] }) : { primaires: [], secondaires: [], tertiaires: [] },
+    experient: initialAnn ? (initialAnn.experient||null) : null,
+    cible: initialAnn ? (initialAnn.cible||null) : null,
+    source: initialAnn ? (initialAnn.source||null) : null,
+    comment: initialAnn ? (initialAnn.comment||'') : '',
+    pendingGroupId: null, editingIndex: editingIndex != null ? editingIndex : null
   };
 
-  document.getElementById('ann-panel-sel').textContent = displayText;
-  document.getElementById('ann-comment').value = '';
-  const freeInputClear = document.getElementById('ann-emo-free');
-  if (freeInputClear) freeInputClear.value = '';
-  document.getElementById('ann-emo-secondary') && (document.getElementById('ann-emo-secondary').style.display = 'none');
-  document.getElementById('ann-emo-plus-btn') && (document.getElementById('ann-emo-plus-btn').textContent = '+ Plus');
-  document.getElementById('ann-emo-required') && (document.getElementById('ann-emo-required').style.display = 'none');
-  annShowMode();
-  // Ouvrir la Roue + synchroniser bouton Littérale/Inférée
-  setTimeout(() => {
-    annOpenSubSection('roue');
-    annSetAnnotationMode('__sync__');
-  }, 0);
-  document.getElementById('ann-panel').classList.add('open');
+  // Données à pré-remplir dans la roue popup (édition d'une annotation existante,
+  // par ex. issue d'une acceptation LLM)
+  var _initTypeOpt = null;
+  if (initialAnn) {
+    if (initialAnn.typeOption) _initTypeOpt = initialAnn.typeOption;
+    else if (initialAnn.annotationType === 'inferee') _initTypeOpt = 'Implicite';
+    else if (initialAnn.annotationType === 'litterale') _initTypeOpt = 'Explicite';
+  }
+  var ANN_INIT = initialAnn ? {
+    baseNames: (initialAnn.emotions||[]).map(function(id){
+      var e = ANN_EMO.find(function(e){ return e.id === id; });
+      return e ? e.label : id;
+    }),
+    isIndet: !!initialAnn.emotionIndeterminee,
+    excludedDyads: initialAnn.dyadesExclues || [],
+    annot: {
+      'Type':        _initTypeOpt ? [_initTypeOpt] : [],
+      'Polarité':    initialAnn.polarite  ? [initialAnn.polarite]  : [],
+      'Intensité':   initialAnn.intensite ? [initialAnn.intensite] : [],
+      'Modalisation': initialAnn.modificateurs || [],
+      'Rôle : Expérient': initialAnn.experient ? [annRoleLabelFor(initialAnn.experient)] : [],
+      'Rôle : Source':    initialAnn.source    ? [annRoleLabelFor(initialAnn.source)]    : [],
+      'Rôle : Cible':     initialAnn.cible     ? [annRoleLabelFor(initialAnn.cible)]     : []
+    },
+    comment: initialAnn.emotionLibre || ''
+  } : null;
+
+  // Serialize data for popup
+  var INIT_J      = JSON.stringify(ANN_INIT);
+  _annPopupToken = 'tok_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+  var TOKEN_J     = JSON.stringify(_annPopupToken);
+
+  var _popupB64 = 'PCFET0NUWVBFIGh0bWw+CjxodG1sIGxhbmc9ImZyIj4KPGhlYWQ+CjxtZXRhIGNoYXJzZXQ9IlVURi04Ij4KPHRpdGxlPkFubm90YXRpb248L3RpdGxlPgo8c3R5bGU+CgogIDpyb290ewogICAgLS1iZzojZjRmMmVlOwogICAgLS1ncmV5LWZpbGw6I2Q5ZDlkOTsKICAgIC0tZ3JleS10ZXh0OiM1ZjVmNWY7CiAgICAtLWdyZXktbGluZTojZTJlMmUyOwogIH0KICAqe2JveC1zaXppbmc6Ym9yZGVyLWJveDt9CiAgYm9keXsKICAgIG1hcmdpbjowOwogICAgZm9udC1mYW1pbHk6J1NlZ29lIFVJJywgUm9ib3RvLCBIZWx2ZXRpY2EsIEFyaWFsLCBzYW5zLXNlcmlmOwogICAgYmFja2dyb3VuZDp2YXIoLS1iZyk7CiAgICBjb2xvcjojMzMzOwogICAgZGlzcGxheTpmbGV4OwogICAgZmxleC1kaXJlY3Rpb246Y29sdW1uOwogICAgYWxpZ24taXRlbXM6Y2VudGVyOwogICAgcGFkZGluZzoyNHB4IDEycHggNjBweDsKICB9CiAgI3Rvb2xiYXJ7CiAgICBkaXNwbGF5OmZsZXg7CiAgICBnYXA6MTBweDsKICAgIGFsaWduLWl0ZW1zOmNlbnRlcjsKICAgIG1hcmdpbi1ib3R0b206MTBweDsKICAgIGZsZXgtd3JhcDp3cmFwOwogICAganVzdGlmeS1jb250ZW50OmNlbnRlcjsKICB9CiAgYnV0dG9uewogICAgYmFja2dyb3VuZDojZmZmOwogICAgYm9yZGVyOjFweCBzb2xpZCAjY2NjOwogICAgYm9yZGVyLXJhZGl1czoyMHB4OwogICAgcGFkZGluZzo3cHggMThweDsKICAgIGZvbnQtc2l6ZTowLjg1cmVtOwogICAgY3Vyc29yOnBvaW50ZXI7CiAgICB0cmFuc2l0aW9uOmFsbCAuMTVzIGVhc2U7CiAgfQogIGJ1dHRvbjpob3ZlcnsKICAgIGJhY2tncm91bmQ6IzMzMzsKICAgIGNvbG9yOiNmZmY7CiAgICBib3JkZXItY29sb3I6IzMzMzsKICB9CiAgYnV0dG9uI3ZhbGlkYXRlewogICAgYmFja2dyb3VuZDojMjIyOwogICAgY29sb3I6I2ZmZjsKICAgIGJvcmRlci1jb2xvcjojMjIyOwogIH0KICBidXR0b24jdmFsaWRhdGU6aG92ZXJ7CiAgICBiYWNrZ3JvdW5kOiMwMDA7CiAgfQogICNzZWxlY3Rpb25JbmZvewogICAgZm9udC1zaXplOjAuODVyZW07CiAgICBjb2xvcjojNTU1OwogICAgbWluLWhlaWdodDoxLjJlbTsKICAgIHRleHQtYWxpZ246Y2VudGVyOwogICAgd2lkdGg6NDIwcHg7CiAgICBvdmVyZmxvdy13cmFwOmJyZWFrLXdvcmQ7CiAgICBtYXJnaW4tYm90dG9tOjZweDsKICB9CiAgI3NlbGVjdGlvbkluZm8udmFsaWRhdGVkewogICAgY29sb3I6IzExMTsKICAgIGZvbnQtd2VpZ2h0OjYwMDsKICB9CiAgI3ZhbGlkYXRpb25FcnJvcnsKICAgIGZvbnQtc2l6ZTowLjhyZW07CiAgICBjb2xvcjojYzAzOTJiOwogICAgbWluLWhlaWdodDoxLjFlbTsKICAgIHRleHQtYWxpZ246Y2VudGVyOwogICAgd2lkdGg6NDIwcHg7CiAgICBvdmVyZmxvdy13cmFwOmJyZWFrLXdvcmQ7CiAgICBtYXJnaW4tYm90dG9tOjRweDsKICB9CiAgc3ZnLmxvY2tlZCAuYmFzaWMtbm9kZXsKICAgIGN1cnNvcjpkZWZhdWx0OwogICAgcG9pbnRlci1ldmVudHM6bm9uZTsKICB9CiAgc3ZnLmxvY2tlZCAuZHlhZC1ub2RlewogICAgY3Vyc29yOmRlZmF1bHQ7CiAgICBwb2ludGVyLWV2ZW50czpub25lOwogIH0KICAubWFpbi1yb3d7CiAgICBkaXNwbGF5OmZsZXg7CiAgICBhbGlnbi1pdGVtczpjZW50ZXI7CiAgICBqdXN0aWZ5LWNvbnRlbnQ6Y2VudGVyOwogICAgZ2FwOjM2cHg7CiAgICB3aWR0aDoxMDAlOwogICAgZmxleC13cmFwOndyYXA7CiAgfQogIC5sZWZ0LWNvbHsKICAgIGRpc3BsYXk6ZmxleDsKICAgIGZsZXgtZGlyZWN0aW9uOmNvbHVtbjsKICAgIGFsaWduLWl0ZW1zOmNlbnRlcjsKICAgIGZsZXg6MSAxIDU2MHB4OwogICAgbWF4LXdpZHRoOjkyMHB4OwogICAgbWluLXdpZHRoOjMyMHB4OwogIH0KICAud2hlZWwtd3JhcHsKICAgIHdpZHRoOjEwMCU7CiAgfQogIC5yaWdodC1jb2x7CiAgICBkaXNwbGF5OmZsZXg7CiAgICBmbGV4LWRpcmVjdGlvbjpjb2x1bW47CiAgICBhbGlnbi1pdGVtczpjZW50ZXI7CiAgICBmbGV4OjAgMCBhdXRvOwogIH0KICAuYW5ub3RhdGlvbi1wYW5lbHsKICAgIGZsZXg6MCAwIGF1dG87CiAgICBkaXNwbGF5OmZsZXg7CiAgICBmbGV4LWRpcmVjdGlvbjpjb2x1bW47CiAgICBnYXA6MTJweDsKICAgIGJhY2tncm91bmQ6I2ZmZjsKICAgIGJvcmRlcjoxcHggc29saWQgI2UyZTJlMjsKICAgIGJvcmRlci1yYWRpdXM6MTZweDsKICAgIHBhZGRpbmc6MjJweCAyNHB4OwogICAgYm94LXNoYWRvdzowIDJweCAxMnB4IHJnYmEoMCwwLDAsLjA2KTsKICAgIHdpZHRoOjQyMHB4OwogIH0KICAuYW5ub3Qtcm93ewogICAgZGlzcGxheTpncmlkOwogICAgZ3JpZC10ZW1wbGF0ZS1jb2x1bW5zOiAxMTBweCByZXBlYXQoNCwgMWZyKTsKICAgIGdhcDo2cHg7CiAgICBhbGlnbi1pdGVtczpjZW50ZXI7CiAgfQogIC5hbm5vdC1sYWJlbHsKICAgIGZvbnQtc2l6ZTowLjc4cmVtOwogICAgZm9udC13ZWlnaHQ6NjAwOwogICAgY29sb3I6IzQ0NDsKICAgIHBhZGRpbmctcmlnaHQ6NHB4OwogIH0KICAuYW5ub3QtYnRuewogICAgYmFja2dyb3VuZDojZWVlOwogICAgYm9yZGVyOjFweCBzb2xpZCAjZGRkOwogICAgYm9yZGVyLXJhZGl1czo4cHg7CiAgICBwYWRkaW5nOjdweCA2cHg7CiAgICBmb250LXNpemU6MC43cmVtOwogICAgbGluZS1oZWlnaHQ6MS4xNTsKICAgIGN1cnNvcjpwb2ludGVyOwogICAgY29sb3I6IzY2NjsKICAgIHRyYW5zaXRpb246YWxsIC4xNXMgZWFzZTsKICAgIHRleHQtYWxpZ246Y2VudGVyOwogICAgd2hpdGUtc3BhY2U6bm93cmFwOwogICAgb3ZlcmZsb3c6aGlkZGVuOwogICAgdGV4dC1vdmVyZmxvdzplbGxpcHNpczsKICB9CiAgLmFubm90LWJ0bjpob3ZlcnsKICAgIGJhY2tncm91bmQ6I2UwZTBlMDsKICB9CiAgLmFubm90LWJ0bi5zZWxlY3RlZHsKICAgIGJhY2tncm91bmQ6IzIyMjsKICAgIGNvbG9yOiNmZmY7CiAgICBib3JkZXItY29sb3I6IzIyMjsKICB9CiAgLmFubm90YXRpb24tcGFuZWwubG9ja2VkIC5hbm5vdC1idG57CiAgICBjdXJzb3I6ZGVmYXVsdDsKICAgIHBvaW50ZXItZXZlbnRzOm5vbmU7CiAgfQogIC5hbm5vdC1zZXB7CiAgICBoZWlnaHQ6MXB4OwogICAgYmFja2dyb3VuZDojZWVlOwogICAgYm9yZGVyOm5vbmU7CiAgICBtYXJnaW46MnB4IDA7CiAgfQogICNmcmVlVGV4dFdyYXB7CiAgICBtYXJnaW4tdG9wOjZweDsKICB9CiAgI2ZyZWVUZXh0ewogICAgd2lkdGg6MTAwJTsKICAgIG1pbi1oZWlnaHQ6NzBweDsKICAgIHJlc2l6ZTp2ZXJ0aWNhbDsKICAgIGJvcmRlcjoxcHggc29saWQgI2RkZDsKICAgIGJvcmRlci1yYWRpdXM6MTBweDsKICAgIHBhZGRpbmc6MTBweCAxMnB4OwogICAgZm9udC1mYW1pbHk6aW5oZXJpdDsKICAgIGZvbnQtc2l6ZTowLjhyZW07CiAgICBjb2xvcjojMzMzOwogICAgYmFja2dyb3VuZDojZmFmYWY4OwogICAgdHJhbnNpdGlvbjpib3JkZXItY29sb3IgLjE1cyBlYXNlOwogIH0KICAjZnJlZVRleHQ6Zm9jdXN7CiAgICBvdXRsaW5lOm5vbmU7CiAgICBib3JkZXItY29sb3I6Izk5OTsKICB9CiAgLmFubm90YXRpb24tcGFuZWwubG9ja2VkICNmcmVlVGV4dHsKICAgIHBvaW50ZXItZXZlbnRzOm5vbmU7CiAgICBiYWNrZ3JvdW5kOiNmMGYwZWU7CiAgICBjb2xvcjojODg4OwogIH0KICAudi1zZXB7CiAgICBhbGlnbi1zZWxmOnN0cmV0Y2g7CiAgICB3aWR0aDoxMHB4OwogICAgZmxleDowIDAgYXV0bzsKICAgIGN1cnNvcjpjb2wtcmVzaXplOwogICAgcG9zaXRpb246cmVsYXRpdmU7CiAgICBiYWNrZ3JvdW5kOnRyYW5zcGFyZW50OwogIH0KICAudi1zZXA6OmJlZm9yZXsKICAgIGNvbnRlbnQ6Jyc7CiAgICBwb3NpdGlvbjphYnNvbHV0ZTsKICAgIGxlZnQ6NTAlOwogICAgdG9wOjA7CiAgICBib3R0b206MDsKICAgIHdpZHRoOjFweDsKICAgIGJhY2tncm91bmQ6I2I4YjhiODsKICAgIHRyYW5zZm9ybTp0cmFuc2xhdGVYKC01MCUpOwogICAgdHJhbnNpdGlvbjpiYWNrZ3JvdW5kIC4xNXMgZWFzZSwgd2lkdGggLjE1cyBlYXNlOwogIH0KICAudi1zZXA6aG92ZXI6OmJlZm9yZSwKICAudi1zZXAuZHJhZ2dpbmc6OmJlZm9yZXsKICAgIGJhY2tncm91bmQ6Izc3NzsKICAgIHdpZHRoOjNweDsKICB9CiAgc3ZnewogICAgd2lkdGg6MTAwJTsKICAgIGhlaWdodDphdXRvOwogICAgZGlzcGxheTpibG9jazsKICAgIHVzZXItc2VsZWN0Om5vbmU7CiAgfQogIC5iYXNpYy1ub2RlewogICAgY3Vyc29yOnBvaW50ZXI7CiAgfQogIC5iYXNpYy1ub2RlIGNpcmNsZXsKICAgIHN0cm9rZTojZmZmOwogICAgc3Ryb2tlLXdpZHRoOjM7CiAgICB0cmFuc2l0aW9uOnRyYW5zZm9ybSAuMThzIGVhc2UsIGZpbHRlciAuMThzIGVhc2U7CiAgICB0cmFuc2Zvcm0tb3JpZ2luOmNlbnRlcjsKICAgIHRyYW5zZm9ybS1ib3g6ZmlsbC1ib3g7CiAgfQogIC5iYXNpYy1ub2RlLnNlbGVjdGVkIGNpcmNsZXsKICAgIHN0cm9rZTojMjIyOwogICAgc3Ryb2tlLXdpZHRoOjQ7CiAgICBmaWx0ZXI6ZHJvcC1zaGFkb3coMCAwIDZweCByZ2JhKDAsMCwwLC4zNSkpOwogICAgdHJhbnNmb3JtOnNjYWxlKDEuMTIpOwogIH0KICAuYmFzaWMtbm9kZSB0ZXh0ewogICAgcG9pbnRlci1ldmVudHM6bm9uZTsKICAgIGZvbnQtd2VpZ2h0OjYwMDsKICB9CiAgLmR5YWQtbm9kZXsKICAgIGN1cnNvcjpwb2ludGVyOwogIH0KICAuZHlhZC1ub2RlIGNpcmNsZXsKICAgIHRyYW5zaXRpb246ZmlsbCAuMjVzIGVhc2UsIHRyYW5zZm9ybSAuMjVzIGVhc2UsIGZpbHRlciAuMjVzIGVhc2U7CiAgICB0cmFuc2Zvcm0tb3JpZ2luOmNlbnRlcjsKICAgIHRyYW5zZm9ybS1ib3g6ZmlsbC1ib3g7CiAgfQogIC5keWFkLW5vZGUuYWN0aXZlIGNpcmNsZXsKICAgIHRyYW5zZm9ybTpzY2FsZSgxLjE2KTsKICAgIGZpbHRlcjpkcm9wLXNoYWRvdygwIDAgNXB4IHJnYmEoMCwwLDAsLjI1KSk7CiAgfQogIC5keWFkLW5vZGUuZXhjbHVkZWQgY2lyY2xlewogICAgc3Ryb2tlOiNFNjdFMjI7CiAgICBzdHJva2Utd2lkdGg6MS41OwogICAgc3Ryb2tlLWRhc2hhcnJheTozLDI7CiAgfQogIC5keWFkLW5vZGUgdGV4dHsKICAgIHBvaW50ZXItZXZlbnRzOm5vbmU7CiAgICBmb250LXdlaWdodDo1MDA7CiAgfQogIC5saW5rewogICAgdHJhbnNpdGlvbjpzdHJva2UgLjI1cyBlYXNlLCBzdHJva2Utd2lkdGggLjI1cyBlYXNlLCBvcGFjaXR5IC4yNXMgZWFzZTsKICB9CiAgLmJhc2ljLW5vZGUgLnZhcmlhbnQtbGFiZWx7CiAgICBwb2ludGVyLWV2ZW50czpub25lOwogICAgZm9udC13ZWlnaHQ6NTAwOwogIH0KCjwvc3R5bGU+CjwvaGVhZD4KPGJvZHk+Cgo8ZGl2IGNsYXNzPSJtYWluLXJvdyI+CiAgICA8ZGl2IGNsYXNzPSJsZWZ0LWNvbCI+CiAgICAgIDxkaXYgY2xhc3M9IndoZWVsLXdyYXAiPgogICAgICAgIDxzdmcgaWQ9IndoZWVsIiB2aWV3Qm94PSIwIDAgMTAwMCAxMDAwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjwvc3ZnPgogICAgICA8L2Rpdj4KICAgIDwvZGl2PgoKICAgIDxkaXYgY2xhc3M9InYtc2VwIj48L2Rpdj4KCiAgICA8ZGl2IGNsYXNzPSJyaWdodC1jb2wiPgogICAgICA8ZGl2IGlkPSJ0b29sYmFyIj4KICAgICAgICA8YnV0dG9uIGlkPSJyZXNldCI+UsOpaW5pdGlhbGlzZXI8L2J1dHRvbj4KICAgICAgICA8YnV0dG9uIGlkPSJ2YWxpZGF0ZSI+VmFsaWRlcjwvYnV0dG9uPgogICAgICA8L2Rpdj4KCiAgICAgIDxkaXYgaWQ9InNlbGVjdGlvbkluZm8iPjwvZGl2PgogICAgICA8ZGl2IGlkPSJ2YWxpZGF0aW9uRXJyb3IiPjwvZGl2PgoKICAgICAgPGRpdiBjbGFzcz0iYW5ub3RhdGlvbi1wYW5lbCIgaWQ9ImFubm90YXRpb25QYW5lbCI+PC9kaXY+CiAgICA8L2Rpdj4KICA8L2Rpdj4KCjxzY3JpcHQ+CihmdW5jdGlvbigpewoKICBjb25zdCBCQVNJQyA9IFsKICAgIHtuYW1lOidKb2llJywgICAgICAgICBjb2xvcjonI0ZERDgzNScsIHdlYWs6J1PDqXLDqW5pdMOpJywgICAgc3Ryb25nOidFeHRhc2UnfSwKICAgIHtuYW1lOidDb25maWFuY2UnLCAgICBjb2xvcjonIzhCQzM0QScsIHdlYWs6J0FjY2VwdGF0aW9uJywgc3Ryb25nOidBZG1pcmF0aW9uJ30sCiAgICB7bmFtZTonUGV1cicsICAgICAgICAgY29sb3I6JyMxQjVFMjAnLCB3ZWFrOidBcHByw6loZW5zaW9uJyxzdHJvbmc6J1RlcnJldXInfSwKICAgIHtuYW1lOidTdXJwcmlzZScsICAgICBjb2xvcjonIzAwQkNENCcsIHdlYWs6J0Rpc3RyYWN0aW9uJywgc3Ryb25nOifDiXRvbm5lbWVudCd9LAogICAge25hbWU6J1RyaXN0ZXNzZScsICAgIGNvbG9yOicjMUU2M0M3Jywgd2VhazonU29uZ2VyaWUnLCAgICBzdHJvbmc6J0NoYWdyaW4nfSwKICAgIHtuYW1lOidEw6lnb8O7dCcsICAgICAgIGNvbG9yOicjOEUyNEFBJywgd2VhazonRW5udWknLCAgICAgICBzdHJvbmc6J0F2ZXJzaW9uJ30sCiAgICB7bmFtZTonQ29sw6hyZScsICAgICAgIGNvbG9yOicjRTUzOTM1Jywgd2VhazonQ29udHJhcmnDqXTDqScsIHN0cm9uZzonUmFnZSd9LAogICAge25hbWU6J0FudGljaXBhdGlvbicsIGNvbG9yOicjRkI4QzAwJywgd2VhazonSW50w6lyw6p0JywgICAgIHN0cm9uZzonVmlnaWxhbmNlJ30KICBdOwoKICBjb25zdCBQUklNQVJZID0gWwogICAgJ0Ftb3VyJywnU291bWlzc2lvbicsJ1N0dXBldXInLCdEw6ljZXB0aW9uJywKICAgICdSZW1vcmRzJywnTcOpcHJpcycsJ0FncmVzc2l2aXTDqScsJ09wdGltaXNtZScKICBdOwogIGNvbnN0IFNFQ09OREFSWSA9IFsKICAgICdDdWxwYWJpbGl0w6knLCdDdXJpb3NpdMOpJywnRMOpc2VzcG9pcicsJ1N1cnByaXNlIGV0IHJlamV0JywKICAgICdKYWxvdXNpZScsJ03DqWZpYW5jZSBldCBkw6lnb8O7dCcsJ0ZpZXJ0w6kgKG9yZ3VlaWwpJywnRXNwb2lyJwogIF07CiAgY29uc3QgVEVSVElBUlkgPSBbCiAgICAnw4ltZXJ2ZWlsbGVtZW50JywnVGVuZHJlc3NlIGV0IHRyaXN0ZXNzZScsJ0hvbnRlJywnSW5kaWduYXRpb24nLAogICAgJ1Blc3NpbWlzbWUnLCdNb3JiaWRpdMOpJywnUHVpc3NhbmNlIGV0IGF1dG9yaXTDqScsJ0FueGnDqXTDqScKICBdOwoKICBjb25zdCBSSU5HUyA9IFsKICAgIHtuYW1lczpQUklNQVJZLCAgIGRlbHRhOjEsIHJhZGl1czoyNjUsIHI6MzIsIGZvbnQ6MTEuNX0sCiAgICB7bmFtZXM6U0VDT05EQVJZLCBkZWx0YToyLCByYWRpdXM6MTg1LCByOjI5LCBmb250OjExfSwKICAgIHtuYW1lczpURVJUSUFSWSwgIGRlbHRhOjMsIHJhZGl1czoxMDUsIHI6MjYsIGZvbnQ6MTAuMn0KICBdOwoKICBjb25zdCBDWCA9IDUwMCwgQ1kgPSA1MDA7CiAgY29uc3QgUl9CQVNJQyAgPSAzOTU7CiAgY29uc3QgUl9CQVNJQ19OT0RFID0gNjY7CgogIGNvbnN0IHN2ZyA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCd3aGVlbCcpOwogIGNvbnN0IE5TID0gJ2h0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnJzsKCiAgZnVuY3Rpb24gZWxjKHRhZywgYXR0cnMsIHBhcmVudCl7CiAgICBjb25zdCBlID0gZG9jdW1lbnQuY3JlYXRlRWxlbWVudE5TKE5TLCB0YWcpOwogICAgZm9yKGNvbnN0IGsgaW4gYXR0cnMpIGUuc2V0QXR0cmlidXRlKGssIGF0dHJzW2tdKTsKICAgIGlmKHBhcmVudCkgcGFyZW50LmFwcGVuZENoaWxkKGUpOwogICAgcmV0dXJuIGU7CiAgfQoKICBmdW5jdGlvbiBhbmdsZURlZyhpKXsgcmV0dXJuIC05MCArIGkqNDU7IH0KICBmdW5jdGlvbiBwb2ludEF0KHJhZGl1cywgZGVnKXsKICAgIGNvbnN0IHJhZCA9IGRlZyAqIE1hdGguUEkvMTgwOwogICAgcmV0dXJuIHsgeDogQ1ggKyByYWRpdXMqTWF0aC5jb3MocmFkKSwgeTogQ1kgKyByYWRpdXMqTWF0aC5zaW4ocmFkKSB9OwogIH0KCiAgZnVuY3Rpb24gaGV4VG9SZ2IoaGV4KXsKICAgIGhleCA9IGhleC5yZXBsYWNlKCcjJywnJyk7CiAgICByZXR1cm4gewogICAgICByOiBwYXJzZUludChoZXguc3Vic3RyaW5nKDAsMiksMTYpLAogICAgICBnOiBwYXJzZUludChoZXguc3Vic3RyaW5nKDIsNCksMTYpLAogICAgICBiOiBwYXJzZUludChoZXguc3Vic3RyaW5nKDQsNiksMTYpCiAgICB9OwogIH0KICBmdW5jdGlvbiByZ2JUb0hleChyLGcsYil7CiAgICBjb25zdCBjID0gdiA9PiBNYXRoLnJvdW5kKE1hdGgubWF4KDAsTWF0aC5taW4oMjU1LHYpKSkudG9TdHJpbmcoMTYpLnBhZFN0YXJ0KDIsJzAnKTsKICAgIHJldHVybiAnIycrYyhyKStjKGcpK2MoYik7CiAgfQogIGZ1bmN0aW9uIGJsZW5kKGhleDEsIGhleDIpewogICAgY29uc3QgYSA9IGhleFRvUmdiKGhleDEpLCBiID0gaGV4VG9SZ2IoaGV4Mik7CiAgICByZXR1cm4gcmdiVG9IZXgoKGEucitiLnIpLzIsKGEuZytiLmcpLzIsKGEuYitiLmIpLzIpOwogIH0KICBmdW5jdGlvbiBsaWdodGVuKGhleCwgYW10KXsKICAgIGNvbnN0IGEgPSBoZXhUb1JnYihoZXgpOwogICAgcmV0dXJuIHJnYlRvSGV4KGEucisoMjU1LWEucikqYW10LCBhLmcrKDI1NS1hLmcpKmFtdCwgYS5iKygyNTUtYS5iKSphbXQpOwogIH0KICBmdW5jdGlvbiBkYXJrZW4oaGV4LCBhbXQpewogICAgY29uc3QgYSA9IGhleFRvUmdiKGhleCk7CiAgICByZXR1cm4gcmdiVG9IZXgoYS5yKigxLWFtdCksIGEuZyooMS1hbXQpLCBhLmIqKDEtYW10KSk7CiAgfQogIGZ1bmN0aW9uIGx1bWluYW5jZShoZXgpewogICAgY29uc3Qge3IsZyxifSA9IGhleFRvUmdiKGhleCk7CiAgICByZXR1cm4gKDAuMjk5KnIgKyAwLjU4NypnICsgMC4xMTQqYikvMjU1OwogIH0KICBmdW5jdGlvbiB0ZXh0Q29sb3JGb3IoaGV4KXsKICAgIHJldHVybiBsdW1pbmFuY2UoaGV4KSA+IDAuNiA/ICcjMjIyJyA6ICcjZmZmJzsKICB9CgogIGZ1bmN0aW9uIHdyYXBMYWJlbCh0ZXh0RWwsIGxhYmVsLCBmb250U2l6ZSl7CiAgICBjb25zdCB3b3JkcyA9IGxhYmVsLnNwbGl0KCcgJyk7CiAgICBsZXQgbGluZXM7CiAgICBpZih3b3Jkcy5sZW5ndGggPT09IDEpewogICAgICBsaW5lcyA9IFtsYWJlbF07CiAgICB9IGVsc2UgewogICAgICBsZXQgbWlkID0gTWF0aC5jZWlsKHdvcmRzLmxlbmd0aC8yKTsKICAgICAgbGluZXMgPSBbd29yZHMuc2xpY2UoMCxtaWQpLmpvaW4oJyAnKSwgd29yZHMuc2xpY2UobWlkKS5qb2luKCcgJyldOwogICAgfQogICAgY29uc3QgbGluZUhlaWdodCA9IGZvbnRTaXplICsgMS41OwogICAgY29uc3Qgc3RhcnREeSA9IC0oKGxpbmVzLmxlbmd0aC0xKS8yKSAqIGxpbmVIZWlnaHQ7CiAgICBsaW5lcy5mb3JFYWNoKChsaW5lLCBpZHgpPT57CiAgICAgIGNvbnN0IHRzcGFuID0gZWxjKCd0c3BhbicsIHsKICAgICAgICB4OiB0ZXh0RWwuZ2V0QXR0cmlidXRlKCd4JyksCiAgICAgICAgZHk6IGlkeD09PTAgPyBzdGFydER5IDogbGluZUhlaWdodAogICAgICB9LCB0ZXh0RWwpOwogICAgICB0c3Bhbi50ZXh0Q29udGVudCA9IGxpbmU7CiAgICB9KTsKICB9CgogIGNvbnN0IEFOTk9UQVRJT05fUk9XUyA9IFsKICAgIHtsYWJlbDonVHlwZScsICAgICAgICAgICAgb3B0aW9uczpbJ0V4cGxpY2l0ZScsJ0FuYXBob3JpcXVlJywnSW1wbGljaXRlJ119LAogICAge2xhYmVsOidQb2xhcml0w6knLCAgICAgICAgb3B0aW9uczpbJ05ldXRyZScsJ1Bvc2l0aXZlJywnTsOpZ2F0aXZlJywnSW5kw6l0ZXJtaW7DqWUnXX0sCiAgICB7bGFiZWw6J0ludGVuc2l0w6knLCAgICAgICBvcHRpb25zOlsnTm9ybWFsZScsJ0ZhaWJsZScsJ0ZvcnRlJywnSW5kw6l0ZXJtaW7DqWUnXX0sCiAgICB7bGFiZWw6J01vZGFsaXNhdGlvbicsICAgIG9wdGlvbnM6WydOw6lnYXRpb24nLCdJbmNlcnRpdHVkZSAvIENvbmRpdGlvbm5lbCddLCBtdWx0aTp0cnVlfSwKICAgIHtsYWJlbDonUsO0bGUgOiBFeHDDqXJpZW50JyxvcHRpb25zOlsnTG9jLicsJ0ludGVybG9jLicsJ1RpZXJzJywnSW5kw6l0ZXJtaW7DqSddfSwKICAgIHtsYWJlbDonUsO0bGUgOiBTb3VyY2UnLCAgIG9wdGlvbnM6WydMb2MuJywnSW50ZXJsb2MuJywnVGllcnMnLCdJbmTDqXRlcm1pbsOpJ119LAogICAge2xhYmVsOidSw7RsZSA6IENpYmxlJywgICAgb3B0aW9uczpbJ0xvYy4nLCdJbnRlcmxvYy4nLCdUaWVycycsJ0luZMOpdGVybWluw6knXX0KICBdOwoKICAvLyDilIDilIAgVmFyaWFibGVzIGdsb2JhbGVzIGQnw6l0YXQg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACiAgbGV0IHdoZWVsTG9ja2VkID0gZmFsc2U7CgogIGZ1bmN0aW9uIGxvY2tXaGVlbChsb2NrKXsKICAgIHdoZWVsTG9ja2VkID0gbG9jazsKICAgIHN2Zy5zdHlsZS5vcGFjaXR5ID0gbG9jayA/ICcwLjIyJyA6ICcxJzsKICAgIHN2Zy5zdHlsZS5wb2ludGVyRXZlbnRzID0gbG9jayA/ICdub25lJyA6ICcnOwogIH0KCiAgZnVuY3Rpb24gYnVpbGRBbm5vdGF0aW9uUGFuZWwoKXsKICAgIGNvbnN0IHBhbmVsID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2Fubm90YXRpb25QYW5lbCcpOwoKICAgIC8vIOKUgOKUgCBMaWduZSAxIDogw4ltb3Rpb24gaW5kw6l0ZXJtaW7DqWUg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACiAgICBjb25zdCBzdGF0dXNSb3cgPSBkb2N1bWVudC5jcmVhdGVFbGVtZW50KCdkaXYnKTsKICAgIHN0YXR1c1Jvdy5jbGFzc05hbWUgPSAnYW5ub3Qtcm93JzsKICAgIHN0YXR1c1Jvdy5zdHlsZS5jc3NUZXh0ID0gJ2Rpc3BsYXk6ZmxleDtnYXA6NnB4Oyc7CgogICAgY29uc3QgYkluZGV0ID0gZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgnYnV0dG9uJyk7CiAgICBiSW5kZXQudHlwZSA9ICdidXR0b24nOwogICAgYkluZGV0LmlkID0gJ2J0bi1lbW8taW5kZXQnOwogICAgYkluZGV0LmNsYXNzTmFtZSA9ICdhbm5vdC1idG4nOwogICAgYkluZGV0LnN0eWxlLmNzc1RleHQgPSAnZmxleDoxOyc7CiAgICBiSW5kZXQudGV4dENvbnRlbnQgPSAnw4ltb3Rpb24gaW5kw6l0ZXJtaW7DqWUnOwogICAgYkluZGV0LmFkZEV2ZW50TGlzdGVuZXIoJ2NsaWNrJywgKCk9PnsKICAgICAgY29uc3QgaXNPbiA9IGJJbmRldC5jbGFzc0xpc3QuY29udGFpbnMoJ3NlbGVjdGVkJyk7CiAgICAgIGJJbmRldC5jbGFzc0xpc3QudG9nZ2xlKCdzZWxlY3RlZCcsICFpc09uKTsKICAgICAgY29uc3QgZnJlZUlucEVsID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2ZyZWVUZXh0Jyk7CiAgICAgIGlmKCFpc09uKXsKICAgICAgICAvLyBBY3RpdmVyIGluZMOpdGVybWluw6llIOKGkiB2aWRlciBncmFwaGlxdWUgKyB2ZXJyb3VpbGxlciArIGdyaXNlciBsZSB0ZXh0ZSBsaWJyZQogICAgICAgIHNlbGVjdGVkLmNsZWFyKCk7CiAgICAgICAgYmFzaWNMYXllci5xdWVyeVNlbGVjdG9yQWxsKCcuYmFzaWMtbm9kZScpLmZvckVhY2gobj0+bi5jbGFzc0xpc3QucmVtb3ZlKCdzZWxlY3RlZCcpKTsKICAgICAgICBsb2NrV2hlZWwodHJ1ZSk7CiAgICAgICAgaWYoZnJlZUlucEVsKXsKICAgICAgICAgIGZyZWVJbnBFbC52YWx1ZSA9ICcnOwogICAgICAgICAgZnJlZUlucEVsLmRpc2FibGVkID0gdHJ1ZTsKICAgICAgICAgIGZyZWVJbnBFbC5zdHlsZS5vcGFjaXR5ID0gJzAuMzUnOwogICAgICAgIH0KICAgICAgICByZW5kZXIoKTsKICAgICAgfSBlbHNlIHsKICAgICAgICAvLyBEw6lzYWN0aXZlciDihpIgZMOpdmVycm91aWxsZXIgKyByw6lhY3RpdmVyIGxlIHRleHRlIGxpYnJlCiAgICAgICAgbG9ja1doZWVsKGZhbHNlKTsKICAgICAgICBpZihmcmVlSW5wRWwpewogICAgICAgICAgZnJlZUlucEVsLmRpc2FibGVkID0gZmFsc2U7CiAgICAgICAgICBmcmVlSW5wRWwuc3R5bGUub3BhY2l0eSA9ICcxJzsKICAgICAgICB9CiAgICAgIH0KICAgIH0pOwogICAgc3RhdHVzUm93LmFwcGVuZENoaWxkKGJJbmRldCk7CiAgICBwYW5lbC5hcHBlbmRDaGlsZChzdGF0dXNSb3cpOwoKICAgIC8vIOKUgOKUgCBMaWduZSAyIDogY2hhbXAgdGV4dGUgbGlicmUg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACiAgICBjb25zdCBmcmVlV3JhcCA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpOwogICAgZnJlZVdyYXAuc3R5bGUubWFyZ2luVG9wID0gJzRweCc7CiAgICBjb25zdCBmcmVlSW5wID0gZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgnaW5wdXQnKTsKICAgIGZyZWVJbnAudHlwZSA9ICd0ZXh0JzsKICAgIGZyZWVJbnAuaWQgPSAnZnJlZVRleHQnOwogICAgZnJlZUlucC5wbGFjZWhvbGRlciA9ICfDiW1vdGlvbiBub24gbGlzdMOpZSwgc2VudGltZW50LCBzeW1wdMO0bWUsIG1vZGFsaXTDqeKApic7CiAgICBmcmVlSW5wLnN0eWxlLmNzc1RleHQgPSAnd2lkdGg6MTAwJTtwYWRkaW5nOjZweCAxMHB4O2JvcmRlcjoxcHggc29saWQgI2RkZDtib3JkZXItcmFkaXVzOjdweDtmb250LXNpemU6MTJweDtmb250LWZhbWlseTpzeXN0ZW0tdWksc2Fucy1zZXJpZjtib3gtc2l6aW5nOmJvcmRlci1ib3g7JzsKICAgIGZyZWVJbnAuYWRkRXZlbnRMaXN0ZW5lcignaW5wdXQnLCAoKT0+ewogICAgICBjb25zdCBoYXNUZXh0ID0gZnJlZUlucC52YWx1ZS50cmltKCkubGVuZ3RoID4gMDsKICAgICAgbG9ja1doZWVsKGhhc1RleHQpOwogICAgICBjb25zdCBiSW5kZXQgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnYnRuLWVtby1pbmRldCcpOwogICAgICBpZihoYXNUZXh0KXsKICAgICAgICAvLyBkw6lzw6lsZWN0aW9ubmVyIGdyYXBoaXF1ZSArIGdyaXNlciBpbmTDqXRlcm1pbsOpZQogICAgICAgIHNlbGVjdGVkLmNsZWFyKCk7CiAgICAgICAgYmFzaWNMYXllci5xdWVyeVNlbGVjdG9yQWxsKCcuYmFzaWMtbm9kZScpLmZvckVhY2gobj0+bi5jbGFzc0xpc3QucmVtb3ZlKCdzZWxlY3RlZCcpKTsKICAgICAgICBiSW5kZXQuY2xhc3NMaXN0LnJlbW92ZSgnc2VsZWN0ZWQnKTsKICAgICAgICBiSW5kZXQuZGlzYWJsZWQgPSB0cnVlOwogICAgICAgIGJJbmRldC5zdHlsZS5vcGFjaXR5ID0gJzAuMzUnOwogICAgICAgIHJlbmRlcigpOwogICAgICB9IGVsc2UgewogICAgICAgIGJJbmRldC5kaXNhYmxlZCA9IGZhbHNlOwogICAgICAgIGJJbmRldC5zdHlsZS5vcGFjaXR5ID0gJzEnOwogICAgICAgIGxvY2tXaGVlbChmYWxzZSk7CiAgICAgIH0KICAgIH0pOwogICAgZnJlZVdyYXAuYXBwZW5kQ2hpbGQoZnJlZUlucCk7CiAgICBwYW5lbC5hcHBlbmRDaGlsZChmcmVlV3JhcCk7CgogICAgLy8g4pSA4pSAIFPDqXBhcmF0ZXVyIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgAogICAgY29uc3Qgc2VwMCA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpOwogICAgc2VwMC5jbGFzc05hbWUgPSAnYW5ub3Qtc2VwJzsKICAgIHBhbmVsLmFwcGVuZENoaWxkKHNlcDApOwoKICAgIC8vIOKUgOKUgCBUYWJsZWF1IGFubm90YXRpb24gKGluY2hhbmfDqSkg4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSACiAgICBjb25zdCBzZXBBZnRlciA9IFsnVHlwZScsICdQb2xhcml0w6knLCAnSW50ZW5zaXTDqScsICdNb2RhbGlzYXRpb24nXTsKICAgIEFOTk9UQVRJT05fUk9XUy5mb3JFYWNoKHJvd0RhdGE9PnsKICAgICAgY29uc3Qgcm93ID0gZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgnZGl2Jyk7CiAgICAgIHJvdy5jbGFzc05hbWUgPSAnYW5ub3Qtcm93JzsKICAgICAgcm93LnN0eWxlLmdyaWRUZW1wbGF0ZUNvbHVtbnMgPSAnMTEwcHggcmVwZWF0KCcgKyByb3dEYXRhLm9wdGlvbnMubGVuZ3RoICsgJywgMWZyKSc7CiAgICAgIGNvbnN0IGxhYmVsID0gZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgnZGl2Jyk7CiAgICAgIGxhYmVsLmNsYXNzTmFtZSA9ICdhbm5vdC1sYWJlbCc7CiAgICAgIGxhYmVsLnRleHRDb250ZW50ID0gcm93RGF0YS5sYWJlbDsKICAgICAgcm93LmFwcGVuZENoaWxkKGxhYmVsKTsKICAgICAgcm93RGF0YS5vcHRpb25zLmZvckVhY2gob3B0PT57CiAgICAgICAgY29uc3QgYnRuID0gZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgnYnV0dG9uJyk7CiAgICAgICAgYnRuLnR5cGUgPSAnYnV0dG9uJzsKICAgICAgICBidG4uY2xhc3NOYW1lID0gJ2Fubm90LWJ0bic7CiAgICAgICAgYnRuLnRleHRDb250ZW50ID0gb3B0OwogICAgICAgIGJ0bi5hZGRFdmVudExpc3RlbmVyKCdjbGljaycsICgpPT57CiAgICAgICAgICBpZihyb3dEYXRhLm11bHRpKXsKICAgICAgICAgICAgYnRuLmNsYXNzTGlzdC50b2dnbGUoJ3NlbGVjdGVkJyk7CiAgICAgICAgICB9IGVsc2UgewogICAgICAgICAgICBjb25zdCB3YXNTZWxlY3RlZCA9IGJ0bi5jbGFzc0xpc3QuY29udGFpbnMoJ3NlbGVjdGVkJyk7CiAgICAgICAgICAgIHJvdy5xdWVyeVNlbGVjdG9yQWxsKCcuYW5ub3QtYnRuJykuZm9yRWFjaChiPT5iLmNsYXNzTGlzdC5yZW1vdmUoJ3NlbGVjdGVkJykpOwogICAgICAgICAgICBpZighd2FzU2VsZWN0ZWQpIGJ0bi5jbGFzc0xpc3QuYWRkKCdzZWxlY3RlZCcpOwogICAgICAgICAgfQogICAgICAgIH0pOwogICAgICAgIHJvdy5hcHBlbmRDaGlsZChidG4pOwogICAgICB9KTsKICAgICAgcGFuZWwuYXBwZW5kQ2hpbGQocm93KTsKICAgICAgaWYoc2VwQWZ0ZXIuaW5jbHVkZXMocm93RGF0YS5sYWJlbCkpewogICAgICAgIGNvbnN0IHNlcCA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2RpdicpOwogICAgICAgIHNlcC5jbGFzc05hbWUgPSAnYW5ub3Qtc2VwJzsKICAgICAgICBwYW5lbC5hcHBlbmRDaGlsZChzZXApOwogICAgICB9CiAgICB9KTsKICB9CiAgYnVpbGRBbm5vdGF0aW9uUGFuZWwoKTsKCgoKICBmdW5jdGlvbiBnZXRBbm5vdGF0aW9uU2VsZWN0aW9ucygpewogICAgY29uc3QgcmVzdWx0ID0ge307CiAgICBkb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKCcuYW5ub3Qtcm93JykuZm9yRWFjaChyb3c9PnsKICAgICAgY29uc3QgbGJsID0gcm93LnF1ZXJ5U2VsZWN0b3IoJy5hbm5vdC1sYWJlbCcpOwogICAgICBpZighbGJsKSByZXR1cm47CiAgICAgIHJlc3VsdFtsYmwudGV4dENvbnRlbnRdID0gWy4uLnJvdy5xdWVyeVNlbGVjdG9yQWxsKCcuYW5ub3QtYnRuLnNlbGVjdGVkJyldLm1hcChiPT5iLnRleHRDb250ZW50KTsKICAgIH0pOwogICAgcmV0dXJuIHJlc3VsdDsKICB9CgogIGNvbnN0IHNlbGVjdGVkID0gbmV3IFNldCgpOwogIGNvbnN0IGV4Y2x1ZGVkRHlhZHMgPSBuZXcgU2V0KCk7IC8vIGR5YWRlcyBkb250IGxlcyAyIHBhcmVudHMgc29udCBzw6lsZWN0aW9ubsOpcyBtYWlzIGTDqXNhY3RpdsOpZXMgbWFudWVsbGVtZW50CgogIGZ1bmN0aW9uIHNldEJhc2ljU2VsZWN0ZWQoaSwgdmFsKXsKICAgIGlmKHZhbCkgc2VsZWN0ZWQuYWRkKGkpOyBlbHNlIHNlbGVjdGVkLmRlbGV0ZShpKTsKICAgIGNvbnN0IG5vZGUgPSBiYXNpY0xheWVyLnF1ZXJ5U2VsZWN0b3IoJy5iYXNpYy1ub2RlW2RhdGEtaW5kZXg9IicraSsnIl0nKTsKICAgIGlmKG5vZGUpIG5vZGUuY2xhc3NMaXN0LnRvZ2dsZSgnc2VsZWN0ZWQnLCB2YWwpOwogICAgLy8gU2kgdW4gcGFyZW50IGVzdCBkw6lzw6lsZWN0aW9ubsOpLCBsYSBwYWlyZSBlc3Qgcm9tcHVlIDogb24gb3VibGllIGwnZXhjbHVzaW9uCiAgICAvLyBtYW51ZWxsZSBwb3VyIHJlcGFydGlyIHN1ciB1biDDqXRhdCBwYXIgZMOpZmF1dCAoYWN0aWYpIGxhIHByb2NoYWluZSBmb2lzCiAgICAvLyBxdWUgbGVzIGRldXggcGFyZW50cyBzZXJvbnQgw6Agbm91dmVhdSBzw6lsZWN0aW9ubsOpcy4KICAgIGlmKCF2YWwpewogICAgICBkeWFkRWxlbWVudHMuZm9yRWFjaChkPT57CiAgICAgICAgaWYoZC5wYXJlbnRzLmluY2x1ZGVzKGkpKSBleGNsdWRlZER5YWRzLmRlbGV0ZShkLmxhYmVsKTsKICAgICAgfSk7CiAgICB9CiAgfQoKICBjb25zdCBsaW5rc0xheWVyICAgID0gZWxjKCdnJywge2lkOidsaW5rcyd9LCBzdmcpOwogIGNvbnN0IGR5YWRzTGF5ZXIgICAgID0gZWxjKCdnJywge2lkOidkeWFkcyd9LCBzdmcpOwogIGNvbnN0IGJhc2ljTGF5ZXIgICAgID0gZWxjKCdnJywge2lkOidiYXNpY3MnfSwgc3ZnKTsKCiAgY29uc3QgZHlhZEVsZW1lbnRzID0gW107CiAgY29uc3QgbGlua0VsZW1lbnRzICA9IFtdOwoKICBSSU5HUy5mb3JFYWNoKHJpbmc9PnsKICAgIGZvcihsZXQgaT0wO2k8ODtpKyspewogICAgICBjb25zdCBqID0gKGkgKyByaW5nLmRlbHRhKSAlIDg7CiAgICAgIGNvbnN0IG1pZCA9IGFuZ2xlRGVnKGkpICsgcmluZy5kZWx0YSoyMi41OwogICAgICBjb25zdCBwb3MgPSBwb2ludEF0KHJpbmcucmFkaXVzLCBtaWQpOwoKICAgICAgY29uc3QgcG9zSSA9IHBvaW50QXQoUl9CQVNJQywgYW5nbGVEZWcoaSkpOwogICAgICBjb25zdCBwb3NKID0gcG9pbnRBdChSX0JBU0lDLCBhbmdsZURlZyhqKSk7CgogICAgICBjb25zdCBsaW5lSSA9IGVsYygnbGluZScsIHsKICAgICAgICBjbGFzczonbGluaycsIHgxOnBvcy54LCB5MTpwb3MueSwgeDI6cG9zSS54LCB5Mjpwb3NJLnksCiAgICAgICAgc3Ryb2tlOid2YXIoLS1ncmV5LWxpbmUpJywgJ3N0cm9rZS13aWR0aCc6MS41CiAgICAgIH0sIGxpbmtzTGF5ZXIpOwogICAgICBjb25zdCBsaW5lSiA9IGVsYygnbGluZScsIHsKICAgICAgICBjbGFzczonbGluaycsIHgxOnBvcy54LCB5MTpwb3MueSwgeDI6cG9zSi54LCB5Mjpwb3NKLnksCiAgICAgICAgc3Ryb2tlOid2YXIoLS1ncmV5LWxpbmUpJywgJ3N0cm9rZS13aWR0aCc6MS41CiAgICAgIH0sIGxpbmtzTGF5ZXIpOwoKICAgICAgbGlua0VsZW1lbnRzLnB1c2goe2xpbmU6bGluZUksIHNlbGY6aSwgb3RoZXI6aiwgcGFyZW50czpbaSxqXX0pOwogICAgICBsaW5rRWxlbWVudHMucHVzaCh7bGluZTpsaW5lSiwgc2VsZjpqLCBvdGhlcjppLCBwYXJlbnRzOltpLGpdfSk7CgogICAgICBjb25zdCBnID0gZWxjKCdnJywge2NsYXNzOidkeWFkLW5vZGUnfSwgZHlhZHNMYXllcik7CiAgICAgIGNvbnN0IGNpcmNsZSA9IGVsYygnY2lyY2xlJywgewogICAgICAgIGN4OnBvcy54LCBjeTpwb3MueSwgcjpyaW5nLnIsIGZpbGw6J3ZhcigtLWdyZXktZmlsbCknCiAgICAgIH0sIGcpOwogICAgICBjb25zdCB0ZXh0ID0gZWxjKCd0ZXh0JywgewogICAgICAgIHg6cG9zLngsIHk6cG9zLnksICd0ZXh0LWFuY2hvcic6J21pZGRsZScsCiAgICAgICAgJ2RvbWluYW50LWJhc2VsaW5lJzonbWlkZGxlJywgJ2ZvbnQtc2l6ZSc6cmluZy5mb250LAogICAgICAgIGZpbGw6J3ZhcigtLWdyZXktdGV4dCknCiAgICAgIH0sIGcpOwogICAgICB3cmFwTGFiZWwodGV4dCwgcmluZy5uYW1lc1tpXSwgcmluZy5mb250KTsKCiAgICAgIGR5YWRFbGVtZW50cy5wdXNoKHsKICAgICAgICBnLCBjaXJjbGUsIHRleHQsCiAgICAgICAgcGFyZW50czpbaSxqXSwKICAgICAgICBsYWJlbDogcmluZy5uYW1lc1tpXSwKICAgICAgICBhY3RpdmVGaWxsOiBibGVuZChCQVNJQ1tpXS5jb2xvciwgQkFTSUNbal0uY29sb3IpCiAgICAgIH0pOwoKICAgICAgZy5hZGRFdmVudExpc3RlbmVyKCdjbGljaycsICgpPT57CiAgICAgICAgaWYod2hlZWxMb2NrZWQpIHJldHVybjsKICAgICAgICBjb25zdCBib3RoU2VsZWN0ZWQgPSBzZWxlY3RlZC5oYXMoaSkgJiYgc2VsZWN0ZWQuaGFzKGopOwogICAgICAgIGlmKGJvdGhTZWxlY3RlZCl7CiAgICAgICAgICAvLyBMZXMgZGV1eCBwYXJlbnRzIHJlc3RlbnQgc8OpbGVjdGlvbm7DqXMgOiBvbiBiYXNjdWxlIHNldWxlbWVudAogICAgICAgICAgLy8gbCdhY3RpdmF0aW9uIGRlIENFVFRFIGR5YWRlLCBpbmTDqXBlbmRhbW1lbnQgZGUgc2VzIHBhcmVudHMuCiAgICAgICAgICBjb25zdCBsYWJlbCA9IHJpbmcubmFtZXNbaV07CiAgICAgICAgICBpZihleGNsdWRlZER5YWRzLmhhcyhsYWJlbCkpIGV4Y2x1ZGVkRHlhZHMuZGVsZXRlKGxhYmVsKTsKICAgICAgICAgIGVsc2UgZXhjbHVkZWREeWFkcy5hZGQobGFiZWwpOwogICAgICAgIH0gZWxzZSB7CiAgICAgICAgICBzZXRCYXNpY1NlbGVjdGVkKGksIHRydWUpOwogICAgICAgICAgc2V0QmFzaWNTZWxlY3RlZChqLCB0cnVlKTsKICAgICAgICB9CiAgICAgICAgcmVuZGVyKCk7CiAgICAgIH0pOwogICAgfQogIH0pOwoKICAvLyBOb2V1ZHMgZGVzIMOpbW90aW9ucyBkZSBiYXNlLCBhdmVjIGxldXJzIHZhcmlhbnRlcyBmYWlibGUvZm9ydGUgw6ljcml0ZXMKICAvLyDDoCBsJ2ludMOpcmlldXIgbcOqbWUgZHUgbm9ldWQgKGZhaWJsZSBhdS1kZXNzdXMsIGZvcnRlIGVuIGRlc3NvdXMgZHUgbm9tKQogIEJBU0lDLmZvckVhY2goKGIsIGkpPT57CiAgICBjb25zdCBwb3MgPSBwb2ludEF0KFJfQkFTSUMsIGFuZ2xlRGVnKGkpKTsKICAgIGNvbnN0IGcgPSBlbGMoJ2cnLCB7Y2xhc3M6J2Jhc2ljLW5vZGUnLCAnZGF0YS1pbmRleCc6aX0sIGJhc2ljTGF5ZXIpOwogICAgZWxjKCdjaXJjbGUnLCB7Y3g6cG9zLngsIGN5OnBvcy55LCByOlJfQkFTSUNfTk9ERSwgZmlsbDpiLmNvbG9yfSwgZyk7CgogICAgY29uc3QgdGV4dENvbG9yID0gdGV4dENvbG9yRm9yKGIuY29sb3IpOwoKICAgIGNvbnN0IHdlYWtUZXh0ID0gZWxjKCd0ZXh0JywgewogICAgICB4OnBvcy54LCB5OnBvcy55IC0gMjAsICd0ZXh0LWFuY2hvcic6J21pZGRsZScsCiAgICAgICdkb21pbmFudC1iYXNlbGluZSc6J21pZGRsZScsICdmb250LXNpemUnOjkuNSwKICAgICAgZmlsbDp0ZXh0Q29sb3IsIG9wYWNpdHk6MC43NSwgY2xhc3M6J3ZhcmlhbnQtbGFiZWwnCiAgICB9LCBnKTsKICAgIHdlYWtUZXh0LnRleHRDb250ZW50ID0gYi53ZWFrOwoKICAgIGNvbnN0IG5hbWVUZXh0ID0gZWxjKCd0ZXh0JywgewogICAgICB4OnBvcy54LCB5OnBvcy55LCAndGV4dC1hbmNob3InOidtaWRkbGUnLAogICAgICAnZG9taW5hbnQtYmFzZWxpbmUnOidtaWRkbGUnLCAnZm9udC1zaXplJzoxNC41LAogICAgICBmaWxsOnRleHRDb2xvcgogICAgfSwgZyk7CiAgICBuYW1lVGV4dC50ZXh0Q29udGVudCA9IGIubmFtZTsKCiAgICBjb25zdCBzdHJvbmdUZXh0ID0gZWxjKCd0ZXh0JywgewogICAgICB4OnBvcy54LCB5OnBvcy55ICsgMjAsICd0ZXh0LWFuY2hvcic6J21pZGRsZScsCiAgICAgICdkb21pbmFudC1iYXNlbGluZSc6J21pZGRsZScsICdmb250LXNpemUnOjkuNSwKICAgICAgZmlsbDp0ZXh0Q29sb3IsIG9wYWNpdHk6MC43NSwgY2xhc3M6J3ZhcmlhbnQtbGFiZWwnCiAgICB9LCBnKTsKICAgIHN0cm9uZ1RleHQudGV4dENvbnRlbnQgPSBiLnN0cm9uZzsKCiAgICBnLmFkZEV2ZW50TGlzdGVuZXIoJ2NsaWNrJywgKCk9PnsKICAgICAgaWYod2hlZWxMb2NrZWQpIHJldHVybjsKICAgICAgaWYoc2VsZWN0ZWQuaGFzKGkpKSBzZWxlY3RlZC5kZWxldGUoaSk7IGVsc2Ugc2VsZWN0ZWQuYWRkKGkpOwogICAgICBnLmNsYXNzTGlzdC50b2dnbGUoJ3NlbGVjdGVkJywgc2VsZWN0ZWQuaGFzKGkpKTsKICAgICAgcmVuZGVyKCk7CiAgICB9KTsKICB9KTsKCiAgLy8g4pSA4pSAIFByw6ktcmVtcGxpc3NhZ2UgZGVwdWlzIHVuZSBhbm5vdGF0aW9uIGV4aXN0YW50ZSAow6lkaXRpb24gLyBhY2NlcHRhdGlvbiBMTE0pIOKUgOKUgAogIChmdW5jdGlvbiBhcHBseUluaXQoKXsKICAgIHZhciBpbml0ID0gd2luZG93Ll9fQU5OX0lOSVRfXzsKICAgIGlmICghaW5pdCkgcmV0dXJuOwoKICAgIChpbml0LmJhc2VOYW1lcyB8fCBbXSkuZm9yRWFjaChmdW5jdGlvbihuYW1lKXsKICAgICAgdmFyIGJpID0gQkFTSUMuZmluZEluZGV4KGZ1bmN0aW9uKGIpeyByZXR1cm4gYi5uYW1lID09PSBuYW1lOyB9KTsKICAgICAgaWYgKGJpID49IDApIHNldEJhc2ljU2VsZWN0ZWQoYmksIHRydWUpOwogICAgfSk7CgogICAgKGluaXQuZXhjbHVkZWREeWFkcyB8fCBbXSkuZm9yRWFjaChmdW5jdGlvbihsYWJlbCl7CiAgICAgIGV4Y2x1ZGVkRHlhZHMuYWRkKGxhYmVsKTsKICAgIH0pOwoKICAgIGlmIChpbml0LmlzSW5kZXQpIHsKICAgICAgdmFyIGJJbmRldEluaXQgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnYnRuLWVtby1pbmRldCcpOwogICAgICBpZiAoYkluZGV0SW5pdCkgYkluZGV0SW5pdC5jbGFzc0xpc3QuYWRkKCdzZWxlY3RlZCcpOwogICAgICBsb2NrV2hlZWwodHJ1ZSk7CiAgICAgIHZhciBmcmVlSW5wSW5pdCA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdmcmVlVGV4dCcpOwogICAgICBpZiAoZnJlZUlucEluaXQpIHsKICAgICAgICBmcmVlSW5wSW5pdC5kaXNhYmxlZCA9IHRydWU7CiAgICAgICAgZnJlZUlucEluaXQuc3R5bGUub3BhY2l0eSA9ICcwLjM1JzsKICAgICAgfQogICAgfQoKICAgIE9iamVjdC5rZXlzKGluaXQuYW5ub3QgfHwge30pLmZvckVhY2goZnVuY3Rpb24obGFiZWwpewogICAgICB2YXIgdmFscyA9IGluaXQuYW5ub3RbbGFiZWxdOwogICAgICBpZiAoIXZhbHMgfHwgIXZhbHMubGVuZ3RoKSByZXR1cm47CiAgICAgIGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3JBbGwoJy5hbm5vdC1yb3cnKS5mb3JFYWNoKGZ1bmN0aW9uKHJvdyl7CiAgICAgICAgdmFyIGxibCA9IHJvdy5xdWVyeVNlbGVjdG9yKCcuYW5ub3QtbGFiZWwnKTsKICAgICAgICBpZiAoIWxibCB8fCBsYmwudGV4dENvbnRlbnQgIT09IGxhYmVsKSByZXR1cm47CiAgICAgICAgcm93LnF1ZXJ5U2VsZWN0b3JBbGwoJy5hbm5vdC1idG4nKS5mb3JFYWNoKGZ1bmN0aW9uKGJ0bil7CiAgICAgICAgICBpZiAodmFscy5pbmNsdWRlcyhidG4udGV4dENvbnRlbnQpKSBidG4uY2xhc3NMaXN0LmFkZCgnc2VsZWN0ZWQnKTsKICAgICAgICB9KTsKICAgICAgfSk7CiAgICB9KTsKCiAgICBpZiAoaW5pdC5jb21tZW50KSB7CiAgICAgIHZhciBmaSA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdmcmVlVGV4dCcpOwogICAgICBpZiAoZmkpIHsKICAgICAgICBmaS52YWx1ZSA9IGluaXQuY29tbWVudDsKICAgICAgICBsb2NrV2hlZWwodHJ1ZSk7CiAgICAgICAgdmFyIGJJbmRldEZvclRleHQgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnYnRuLWVtby1pbmRldCcpOwogICAgICAgIGlmIChiSW5kZXRGb3JUZXh0KSB7CiAgICAgICAgICBiSW5kZXRGb3JUZXh0LmNsYXNzTGlzdC5yZW1vdmUoJ3NlbGVjdGVkJyk7CiAgICAgICAgICBiSW5kZXRGb3JUZXh0LmRpc2FibGVkID0gdHJ1ZTsKICAgICAgICAgIGJJbmRldEZvclRleHQuc3R5bGUub3BhY2l0eSA9ICcwLjM1JzsKICAgICAgICB9CiAgICAgIH0KICAgIH0KICB9KSgpOwoKICBjb25zdCBzZWxlY3Rpb25JbmZvID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ3NlbGVjdGlvbkluZm8nKTsKICBjb25zdCB2YWxpZGF0aW9uRXJyb3IgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgndmFsaWRhdGlvbkVycm9yJyk7CiAgbGV0IHZhbGlkYXRlZFRleHQgPSAnJzsKICBsZXQgaGFzVmFsaWRhdGVkID0gZmFsc2U7CgogIGZ1bmN0aW9uIGFjdGl2ZUR5YWRMYWJlbHMoKXsKICAgIHJldHVybiBkeWFkRWxlbWVudHMuZmlsdGVyKGQ9PnNlbGVjdGVkLmhhcyhkLnBhcmVudHNbMF0pICYmIHNlbGVjdGVkLmhhcyhkLnBhcmVudHNbMV0pICYmICFleGNsdWRlZER5YWRzLmhhcyhkLmxhYmVsKSkubWFwKGQ9PmQubGFiZWwpOwogIH0KCiAgZnVuY3Rpb24gcmVuZGVyKCl7CiAgICBkeWFkRWxlbWVudHMuZm9yRWFjaChkPT57CiAgICAgIGNvbnN0IGJvdGhQYXJlbnRzID0gc2VsZWN0ZWQuaGFzKGQucGFyZW50c1swXSkgJiYgc2VsZWN0ZWQuaGFzKGQucGFyZW50c1sxXSk7CiAgICAgIGNvbnN0IGFjdGl2ZSA9IGJvdGhQYXJlbnRzICYmICFleGNsdWRlZER5YWRzLmhhcyhkLmxhYmVsKTsKICAgICAgZC5nLmNsYXNzTGlzdC50b2dnbGUoJ2FjdGl2ZScsIGFjdGl2ZSk7CiAgICAgIGQuZy5jbGFzc0xpc3QudG9nZ2xlKCdleGNsdWRlZCcsIGJvdGhQYXJlbnRzICYmIGV4Y2x1ZGVkRHlhZHMuaGFzKGQubGFiZWwpKTsKICAgICAgZC5jaXJjbGUuc2V0QXR0cmlidXRlKCdmaWxsJywgYWN0aXZlID8gZC5hY3RpdmVGaWxsIDogJ3ZhcigtLWdyZXktZmlsbCknKTsKICAgICAgZC50ZXh0LnNldEF0dHJpYnV0ZSgnZmlsbCcsIGFjdGl2ZSA/IHRleHRDb2xvckZvcihkLmFjdGl2ZUZpbGwpIDogJ3ZhcigtLWdyZXktdGV4dCknKTsKICAgIH0pOwoKICAgIGxpbmtFbGVtZW50cy5mb3JFYWNoKGw9PnsKICAgICAgY29uc3Qgc2VsZlNlbGVjdGVkICA9IHNlbGVjdGVkLmhhcyhsLnNlbGYpOwogICAgICBjb25zdCBvdGhlclNlbGVjdGVkID0gc2VsZWN0ZWQuaGFzKGwub3RoZXIpOwoKICAgICAgaWYoc2VsZlNlbGVjdGVkICYmIG90aGVyU2VsZWN0ZWQpewogICAgICAgIGwubGluZS5zZXRBdHRyaWJ1dGUoJ3N0cm9rZScsIEJBU0lDW2wuc2VsZl0uY29sb3IpOwogICAgICAgIGwubGluZS5zZXRBdHRyaWJ1dGUoJ3N0cm9rZS13aWR0aCcsIDIuNik7CiAgICAgICAgbC5saW5lLnNldEF0dHJpYnV0ZSgnb3BhY2l0eScsIDAuOTUpOwogICAgICB9IGVsc2UgaWYoc2VsZlNlbGVjdGVkKXsKICAgICAgICBsLmxpbmUuc2V0QXR0cmlidXRlKCdzdHJva2UnLCBCQVNJQ1tsLnNlbGZdLmNvbG9yKTsKICAgICAgICBsLmxpbmUuc2V0QXR0cmlidXRlKCdzdHJva2Utd2lkdGgnLCAyLjIpOwogICAgICAgIGwubGluZS5zZXRBdHRyaWJ1dGUoJ29wYWNpdHknLCAwLjU1KTsKICAgICAgfSBlbHNlIHsKICAgICAgICBsLmxpbmUuc2V0QXR0cmlidXRlKCdzdHJva2UnLCAndmFyKC0tZ3JleS1saW5lKScpOwogICAgICAgIGwubGluZS5zZXRBdHRyaWJ1dGUoJ3N0cm9rZS13aWR0aCcsIDEuNSk7CiAgICAgICAgbC5saW5lLnNldEF0dHJpYnV0ZSgnb3BhY2l0eScsIDEpOwogICAgICB9CiAgICB9KTsKCiAgICBjb25zdCBpc0luZGV0Tm93ID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2J0bi1lbW8taW5kZXQnKS5jbGFzc0xpc3QuY29udGFpbnMoJ3NlbGVjdGVkJyk7CiAgICBpZihzZWxlY3Rpb25JbmZvLmNsYXNzTGlzdC5jb250YWlucygndmFsaWRhdGVkJykpewogICAgICBzZWxlY3Rpb25JbmZvLnRleHRDb250ZW50ID0gdmFsaWRhdGVkVGV4dDsKICAgIH0gZWxzZSBpZihzZWxlY3RlZC5zaXplID09PSAwICYmIGlzSW5kZXROb3cpewogICAgICBzZWxlY3Rpb25JbmZvLnRleHRDb250ZW50ID0gJ1PDqWxlY3Rpb24gOiDDiW1vdGlvbiBpbmTDqXRlcm1pbsOpZSc7CiAgICB9IGVsc2UgaWYoc2VsZWN0ZWQuc2l6ZSA9PT0gMCl7CiAgICAgIHNlbGVjdGlvbkluZm8udGV4dENvbnRlbnQgPSAnJzsKICAgIH0gZWxzZSB7CiAgICAgIGNvbnN0IGJhc2VOYW1lcyA9IFsuLi5zZWxlY3RlZF0uc29ydCgoYSxiKT0+YS1iKS5tYXAoaT0+QkFTSUNbaV0ubmFtZSk7CiAgICAgIGNvbnN0IGR5YWROYW1lcyA9IGFjdGl2ZUR5YWRMYWJlbHMoKTsKICAgICAgbGV0IHR4dCA9ICdTw6lsZWN0aW9uIDogJyArIGJhc2VOYW1lcy5qb2luKCcgKyAnKTsKICAgICAgaWYoZHlhZE5hbWVzLmxlbmd0aCl7CiAgICAgICAgdHh0ICs9ICcgIOKGkiAgJyArIGR5YWROYW1lcy5qb2luKCcsICcpOwogICAgICB9CiAgICAgIHNlbGVjdGlvbkluZm8udGV4dENvbnRlbnQgPSB0eHQ7CiAgICB9CiAgfQoKICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgncmVzZXQnKS5hZGRFdmVudExpc3RlbmVyKCdjbGljaycsICgpPT57CiAgICBzZWxlY3RlZC5jbGVhcigpOwogICAgZXhjbHVkZWREeWFkcy5jbGVhcigpOwogICAgbG9ja1doZWVsKGZhbHNlKTsKICAgIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdidG4tZW1vLWluZGV0JykuY2xhc3NMaXN0LnJlbW92ZSgnc2VsZWN0ZWQnKTsKICAgIGNvbnN0IGZpPWRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdmcmVlVGV4dCcpOyBpZihmaSlmaS52YWx1ZT0nJzsKICAgIGJhc2ljTGF5ZXIucXVlcnlTZWxlY3RvckFsbCgnLmJhc2ljLW5vZGUnKS5mb3JFYWNoKG49Pm4uY2xhc3NMaXN0LnJlbW92ZSgnc2VsZWN0ZWQnKSk7CiAgICBzdmcuY2xhc3NMaXN0LnJlbW92ZSgnbG9ja2VkJyk7CiAgICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnYW5ub3RhdGlvblBhbmVsJykuY2xhc3NMaXN0LnJlbW92ZSgnbG9ja2VkJyk7CiAgICBkb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKCcuYW5ub3QtYnRuLnNlbGVjdGVkJykuZm9yRWFjaChiPT5iLmNsYXNzTGlzdC5yZW1vdmUoJ3NlbGVjdGVkJykpOwogICAgZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2ZyZWVUZXh0JykudmFsdWUgPSAnJzsKICAgIHNlbGVjdGlvbkluZm8uY2xhc3NMaXN0LnJlbW92ZSgndmFsaWRhdGVkJyk7CiAgICB2YWxpZGF0aW9uRXJyb3IudGV4dENvbnRlbnQgPSAnJzsKICAgIHJlbmRlcigpOwogIH0pOwoKICBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgndmFsaWRhdGUnKS5hZGRFdmVudExpc3RlbmVyKCdjbGljaycsICgpPT57CiAgICBjb25zdCBhbm5vdCA9IGdldEFubm90YXRpb25TZWxlY3Rpb25zKCk7CiAgICBjb25zdCBtaXNzaW5nID0gW107CiAgICBjb25zdCBmcmVlVmFsID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2ZyZWVUZXh0JykgPyBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnZnJlZVRleHQnKS52YWx1ZS50cmltKCkgOiAnJzsKICAgIGNvbnN0IGlzSW5kZXQgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnYnRuLWVtby1pbmRldCcpLmNsYXNzTGlzdC5jb250YWlucygnc2VsZWN0ZWQnKTsKICAgIGNvbnN0IGhhc0VtbyAgPSBzZWxlY3RlZC5zaXplID4gMCB8fCBpc0luZGV0IHx8IGZyZWVWYWwubGVuZ3RoID4gMDsKICAgIGlmKCFoYXNFbW8pIG1pc3NpbmcucHVzaCgnYXUgbW9pbnMgdW5lIMOpbW90aW9uLCBvdSBjb2NoZXIgSW5kw6l0ZXJtaW7DqWUsIG91IHNhaXNpciB1biB0ZXh0ZSBsaWJyZScpOwogICAgaWYoIWFubm90WydUeXBlJ10gfHwgYW5ub3RbJ1R5cGUnXS5sZW5ndGggPT09IDApIG1pc3NpbmcucHVzaCgndW4gdHlwZSBkYW5zIGxhIGxpZ25lIFR5cGUnKTsKICAgIGlmKCFhbm5vdFsnUG9sYXJpdMOpJ10gfHwgYW5ub3RbJ1BvbGFyaXTDqSddLmxlbmd0aCA9PT0gMCkgbWlzc2luZy5wdXNoKCd1bmUgcG9sYXJpdMOpJyk7CiAgICBpZighYW5ub3RbJ0ludGVuc2l0w6knXSB8fCBhbm5vdFsnSW50ZW5zaXTDqSddLmxlbmd0aCA9PT0gMCkgbWlzc2luZy5wdXNoKCd1bmUgaW50ZW5zaXTDqScpOwoKICAgIGlmKG1pc3NpbmcubGVuZ3RoKXsKICAgICAgdmFsaWRhdGlvbkVycm9yLnRleHRDb250ZW50ID0gJ1PDqWxlY3Rpb24gaW5jb21wbMOodGUgOiBpbCBtYW5xdWUgJyArIG1pc3Npbmcuam9pbignLCAnKSArICcuJzsKICAgICAgcmV0dXJuOwogICAgfQoKICAgIHZhbGlkYXRpb25FcnJvci50ZXh0Q29udGVudCA9ICcnOwogICAgaGFzVmFsaWRhdGVkID0gdHJ1ZTsKICAgIHN2Zy5jbGFzc0xpc3QuYWRkKCdsb2NrZWQnKTsKICAgIGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdhbm5vdGF0aW9uUGFuZWwnKS5jbGFzc0xpc3QuYWRkKCdsb2NrZWQnKTsKCiAgICBjb25zdCBiYXNlTmFtZXMgPSBbLi4uc2VsZWN0ZWRdLnNvcnQoKGEsYik9PmEtYikubWFwKGk9PkJBU0lDW2ldLm5hbWUpOwogICAgY29uc3QgZHlhZE5hbWVzID0gYWN0aXZlRHlhZExhYmVscygpOwoKICAgIGNvbnN0IHBhcnRzID0gW2Jhc2VOYW1lcy5sZW5ndGggPyBiYXNlTmFtZXMuam9pbignICsgJykgOiAoaXNJbmRldCA/ICfDiW1vdGlvbiBpbmTDqXRlcm1pbsOpZScgOiAnJyldOwogICAgaWYoZHlhZE5hbWVzLmxlbmd0aCkgcGFydHMucHVzaChkeWFkTmFtZXMuam9pbignLCAnKSk7CgogICAgQU5OT1RBVElPTl9ST1dTLmZvckVhY2gocm93RGF0YT0+ewogICAgICBjb25zdCB2YWxzID0gYW5ub3Rbcm93RGF0YS5sYWJlbF07CiAgICAgIGlmKHZhbHMgJiYgdmFscy5sZW5ndGgpewogICAgICAgIHBhcnRzLnB1c2gocm93RGF0YS5sYWJlbCArICcgOiAnICsgdmFscy5qb2luKCcsICcpKTsKICAgICAgfQogICAgfSk7CgogICAgY29uc3QgZnJlZVRleHRWYWwgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnZnJlZVRleHQnKS52YWx1ZS50cmltKCk7CiAgICBpZihmcmVlVGV4dFZhbCl7CiAgICAgIHBhcnRzLnB1c2goJ05vdGUgOiAnICsgZnJlZVRleHRWYWwpOwogICAgfQoKICAgIHZhbGlkYXRlZFRleHQgPSAn4pyTIFPDqWxlY3Rpb24gOiAnICsgcGFydHMuam9pbignICB8ICAnKTsKICAgIHNlbGVjdGlvbkluZm8uY2xhc3NMaXN0LmFkZCgndmFsaWRhdGVkJyk7CiAgICByZW5kZXIoKTsKCiAgICBjb25zdCBkeT17cHJpbWFpcmVzOltdLHNlY29uZGFpcmVzOltdLHRlcnRpYWlyZXM6W119OwogICAgY29uc3QgZXhjbHVkZWRSZWxldmFudCA9IFtdOwogICAgZHlhZEVsZW1lbnRzLmZvckVhY2goZnVuY3Rpb24oZCl7CiAgICAgIGlmKHNlbGVjdGVkLmhhcyhkLnBhcmVudHNbMF0pJiZzZWxlY3RlZC5oYXMoZC5wYXJlbnRzWzFdKSl7CiAgICAgICAgaWYoIWV4Y2x1ZGVkRHlhZHMuaGFzKGQubGFiZWwpKXsKICAgICAgICAgIGNvbnN0IHJpPVJJTkdTLmZpbmRJbmRleChmdW5jdGlvbihyKXtyZXR1cm4gci5uYW1lcy5pbmNsdWRlcyhkLmxhYmVsKTt9KTsKICAgICAgICAgIGlmKHJpPT09MClkeS5wcmltYWlyZXMucHVzaChkLmxhYmVsKTsKICAgICAgICAgIGVsc2UgaWYocmk9PT0xKWR5LnNlY29uZGFpcmVzLnB1c2goZC5sYWJlbCk7CiAgICAgICAgICBlbHNlIGR5LnRlcnRpYWlyZXMucHVzaChkLmxhYmVsKTsKICAgICAgICB9IGVsc2UgewogICAgICAgICAgZXhjbHVkZWRSZWxldmFudC5wdXNoKGQubGFiZWwpOwogICAgICAgIH0KICAgICAgfQogICAgfSk7CiAgICBjb25zdCBwYXlsb2FkID0gewogICAgICBpc0luZGV0OiBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnYnRuLWVtby1pbmRldCcpLmNsYXNzTGlzdC5jb250YWlucygnc2VsZWN0ZWQnKSwKICAgICAgYmFzZU5hbWVzOlsuLi5zZWxlY3RlZF0uc29ydCgoYSxiKT0+YS1iKS5tYXAoaT0+QkFTSUNbaV0ubmFtZSksCiAgICAgIGR5YWRlczpkeSwgZXhjbHVkZWREeWFkczpleGNsdWRlZFJlbGV2YW50LCBhbm5vdDphbm5vdCwKICAgICAgY29tbWVudDogZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2ZyZWVUZXh0JykgPyBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnZnJlZVRleHQnKS52YWx1ZS50cmltKCkgOiAnJwogICAgfTsKICAgIGNvbnN0IG15VG9rZW4gPSB3aW5kb3cuX19BTk5fUE9QVVBfVE9LRU5fXzsKICAgIGxldCBzZW50ID0gZmFsc2U7CgogICAgLy8gVGVudGF0aXZlIDEgOiBhcHBlbCBkaXJlY3QgKGZvbmN0aW9ubmUgc2kgbcOqbWUgb3JpZ2luZSkKICAgIHRyeXsKICAgICAgaWYod2luZG93Lm9wZW5lciAmJiAhd2luZG93Lm9wZW5lci5jbG9zZWQgJiYgd2luZG93Lm9wZW5lci5fYW5uUG9wdXBDYWxsYmFjayl7CiAgICAgICAgd2luZG93Lm9wZW5lci5fYW5uUG9wdXBDYWxsYmFjayhwYXlsb2FkKTsKICAgICAgICBzZW50ID0gdHJ1ZTsKICAgICAgfQogICAgfWNhdGNoKGUpeyAvKiBhY2PDqHMgYmxvcXXDqSBlbnRyZSBvcmlnaW5lcyBkaWZmw6lyZW50ZXMgOiBvbiByZXRvbWJlIHN1ciBwb3N0TWVzc2FnZSAqLyB9CgogICAgLy8gVGVudGF0aXZlIDIgKHRvdWpvdXJzIGVudm95w6llIGF1c3NpLCBzYW5zIHJpc3F1ZSkgOiBwb3N0TWVzc2FnZSwgcm9idXN0ZSBlbnRyZSBvcmlnaW5lcwogICAgdHJ5ewogICAgICBpZih3aW5kb3cub3BlbmVyICYmICF3aW5kb3cub3BlbmVyLmNsb3NlZCl7CiAgICAgICAgd2luZG93Lm9wZW5lci5wb3N0TWVzc2FnZSh7IHR5cGU6J2Fubl9wb3B1cF92YWxpZGF0ZScsIHRva2VuOiBteVRva2VuLCBwYXlsb2FkOiBwYXlsb2FkIH0sICcqJyk7CiAgICAgICAgc2VudCA9IHRydWU7CiAgICAgIH0KICAgIH1jYXRjaChlKXt9CgogICAgaWYoIXNlbnQpewogICAgICB2YWxpZGF0aW9uRXJyb3IudGV4dENvbnRlbnQgPSAn4pqgIEltcG9zc2libGUgZGUgdHJhbnNtZXR0cmUgbFwnYW5ub3RhdGlvbiDDoCBsYSBmZW7DqnRyZSBwcmluY2lwYWxlIChmZXJtw6llIG91IGluYWNjZXNzaWJsZSkuIE5lIGZlcm1leiBwYXMgY2V0dGUgZmVuw6p0cmUgOiByZWNvcGlleiB2b3MgcsOpcG9uc2VzIG1hbnVlbGxlbWVudCBzaSBiZXNvaW4uJzsKICAgICAgcmV0dXJuOwogICAgfQoKICAgIHNldFRpbWVvdXQoZnVuY3Rpb24oKXt3aW5kb3cuY2xvc2UoKTt9LDE1MCk7CiAgfSk7CgogIHJlbmRlcigpOwoKICAvLyAtLS0tIFPDqXBhcmF0ZXVyIHZlcnRpY2FsIGTDqXBsYcOnYWJsZSAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCiAgKGZ1bmN0aW9uIGluaXREcmFnZ2FibGVTZXBhcmF0b3IoKXsKICAgIGNvbnN0IHZzZXAgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKCcudi1zZXAnKTsKICAgIGNvbnN0IGxlZnRDb2wgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKCcubGVmdC1jb2wnKTsKICAgIGNvbnN0IG1haW5Sb3cgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yKCcubWFpbi1yb3cnKTsKICAgIGxldCBkcmFnZ2luZyA9IGZhbHNlOwoKICAgIHZzZXAuYWRkRXZlbnRMaXN0ZW5lcignbW91c2Vkb3duJywgKGUpPT57CiAgICAgIGRyYWdnaW5nID0gdHJ1ZTsKICAgICAgdnNlcC5jbGFzc0xpc3QuYWRkKCdkcmFnZ2luZycpOwogICAgICBkb2N1bWVudC5ib2R5LnN0eWxlLnVzZXJTZWxlY3QgPSAnbm9uZSc7CiAgICAgIGUucHJldmVudERlZmF1bHQoKTsKICAgIH0pOwoKICAgIGRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoJ21vdXNlbW92ZScsIChlKT0+ewogICAgICBpZighZHJhZ2dpbmcpIHJldHVybjsKICAgICAgY29uc3QgcmVjdCA9IG1haW5Sb3cuZ2V0Qm91bmRpbmdDbGllbnRSZWN0KCk7CiAgICAgIGNvbnN0IG1pbkxlZnQgPSAzMDAsIG1pblJpZ2h0ID0gMzIwLCBzZXBXaWR0aCA9IDEwOwogICAgICBsZXQgbGVmdFdpZHRoID0gZS5jbGllbnRYIC0gcmVjdC5sZWZ0IC0gc2VwV2lkdGgvMjsKICAgICAgY29uc3QgbWF4TGVmdCA9IHJlY3Qud2lkdGggLSBtaW5SaWdodCAtIHNlcFdpZHRoOwogICAgICBsZWZ0V2lkdGggPSBNYXRoLm1heChtaW5MZWZ0LCBNYXRoLm1pbihtYXhMZWZ0LCBsZWZ0V2lkdGgpKTsKICAgICAgbGVmdENvbC5zdHlsZS5mbGV4ID0gJzAgMCAnICsgbGVmdFdpZHRoICsgJ3B4JzsKICAgICAgbGVmdENvbC5zdHlsZS5tYXhXaWR0aCA9IGxlZnRXaWR0aCArICdweCc7CiAgICB9KTsKCiAgICBkb2N1bWVudC5hZGRFdmVudExpc3RlbmVyKCdtb3VzZXVwJywgKCk9PnsKICAgICAgaWYoZHJhZ2dpbmcpewogICAgICAgIGRyYWdnaW5nID0gZmFsc2U7CiAgICAgICAgdnNlcC5jbGFzc0xpc3QucmVtb3ZlKCdkcmFnZ2luZycpOwogICAgICAgIGRvY3VtZW50LmJvZHkuc3R5bGUudXNlclNlbGVjdCA9ICcnOwogICAgICB9CiAgICB9KTsKICAKICAvLyDilIDilIAgWm9vbSBtb2xldHRlIOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgOKUgAogIGxldCBfelNjYWxlID0gMTsKICBjb25zdCBfc3ZnRWwgPSBkb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnd2hlZWwnKTsKCiAgX3N2Z0VsLmFkZEV2ZW50TGlzdGVuZXIoJ3doZWVsJywgZnVuY3Rpb24oZSl7CiAgICBlLnByZXZlbnREZWZhdWx0KCk7CiAgICBjb25zdCBkZWx0YSA9IGUuZGVsdGFZIDwgMCA/IDEuMTIgOiAwLjg5OwogICAgX3pTY2FsZSA9IE1hdGgubWluKDMsIE1hdGgubWF4KDAuNSwgX3pTY2FsZSAqIGRlbHRhKSk7CiAgICBfc3ZnRWwuc3R5bGUudHJhbnNmb3JtID0gJ3NjYWxlKCcgKyBfelNjYWxlICsgJyknOwogICAgX3N2Z0VsLnN0eWxlLnRyYW5zZm9ybU9yaWdpbiA9ICdjZW50ZXIgY2VudGVyJzsKICB9LCB7cGFzc2l2ZTogZmFsc2V9KTsKfSkoKTsKCiAgd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoJ2JlZm9yZXVubG9hZCcsIGZ1bmN0aW9uKGUpewogICAgaWYgKCFoYXNWYWxpZGF0ZWQpIHsKICAgICAgZS5wcmV2ZW50RGVmYXVsdCgpOwogICAgICBlLnJldHVyblZhbHVlID0gJyc7CiAgICB9CiAgfSk7CgogIHdpbmRvdy5hZGRFdmVudExpc3RlbmVyKCd1bmxvYWQnLCBmdW5jdGlvbigpewogICAgdHJ5ewogICAgICB2YXIgbXlUb2tlbiA9IHdpbmRvdy5fX0FOTl9QT1BVUF9UT0tFTl9fOwogICAgICBpZih3aW5kb3cub3BlbmVyICYmICF3aW5kb3cub3BlbmVyLmNsb3NlZCAmJiAoIW15VG9rZW4gfHwgd2luZG93Lm9wZW5lci5fYW5uUG9wdXBUb2tlbiA9PT0gbXlUb2tlbikpewogICAgICAgIHdpbmRvdy5vcGVuZXIuX2FublBvcHVwQ2FsbGJhY2sgPSBudWxsOwogICAgICAgIHdpbmRvdy5vcGVuZXIuZG9jdW1lbnQucXVlcnlTZWxlY3RvckFsbCgnLmFubi13b3JkLnNlbGVjdGVkJykuZm9yRWFjaChmdW5jdGlvbih3KXt3LmNsYXNzTGlzdC5yZW1vdmUoJ3NlbGVjdGVkJyk7fSk7CiAgICAgICAgd2luZG93Lm9wZW5lci5kb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKCcuYW5uLXNwYWNlJykuZm9yRWFjaChmdW5jdGlvbihzKXtzLnN0eWxlLmJhY2tncm91bmQ9Jyc7fSk7CiAgICAgICAgaWYod2luZG93Lm9wZW5lci5hbm5DdXJyZW50U2VsZWN0aW9uKSB3aW5kb3cub3BlbmVyLmFubkN1cnJlbnRTZWxlY3Rpb24udHVybklkeD1udWxsOwogICAgICAgIGlmKHdpbmRvdy5vcGVuZXIuYW5uUGFuZWxTdGF0ZSkgd2luZG93Lm9wZW5lci5hbm5QYW5lbFN0YXRlLnR1cm5JZHg9bnVsbDsKICAgICAgICBpZih3aW5kb3cub3BlbmVyLmFublJlZnJlc2hXb3JkSGlnaGxpZ2h0cykgd2luZG93Lm9wZW5lci5hbm5SZWZyZXNoV29yZEhpZ2hsaWdodHMoKTsKICAgICAgfQogICAgfWNhdGNoKGUpe30KICB9KTsKfSkoKTsKPC9zY3JpcHQ+CjwvYm9keT4KPC9odG1sPg==';
+  var _popupBytes = Uint8Array.from(atob(_popupB64), function(c){ return c.charCodeAt(0); });
+  var _popupHtml = new TextDecoder('utf-8').decode(_popupBytes);
+  var _initScript = '<script>window.__ANN_INIT__ = ' + INIT_J + '; window.__ANN_POPUP_TOKEN__ = ' + TOKEN_J + ';<\/script>\n';
+  _popupHtml = _popupHtml.replace('<script>', _initScript + '<script>');
+  var blob = new Blob([new TextEncoder().encode(_popupHtml)], {type:'text/html;charset=utf-8'});
+  var blobUrl = URL.createObjectURL(blob);
+  const w = window.open(blobUrl, 'ann_'+Date.now(), 'width='+screen.availWidth+',height='+screen.availHeight+',left=0,top=0,resizable=yes,scrollbars=yes,menubar=no,toolbar=no,location=no');
+  if (!w) { alert('Autorisez les popups pour ce site.'); return; }
+  _annPopupWin = w;
+
+  // Callback from popup
+  window._annPopupCallback = function(data) {
+    var typeMap = {'Explicite':'litterale','Anaphorique':'litterale','Implicite':'inferee'};
+    // Handle emotion modes
+    if (data.isIndet) {
+      data.baseNames = [];
+      data.annot['Type'] = data.annot['Type'] || ['Implicite'];
+    }
+    var typeVal = data.annot['Type'] && data.annot['Type'][0] ? data.annot['Type'][0] : '';
+    var emotions = data.baseNames.map(function(name) {
+      var e = ANN_EMO.find(function(e){ return e.label === name; });
+      return e ? e.id : name.toLowerCase();
+    });
+    var annotation = {
+      text: displayText.replace(/^«\s|\s»$/g,''),
+      wordIndices: wordIndices,
+      emotions: emotions,
+      emotionLibre: data.comment,
+      emotionIndeterminee: !!data.isIndet,
+      typeOption: typeVal || null,
+      annotationType: typeMap[typeVal] || 'litterale',
+      polarite:    data.annot['Polarité']  && data.annot['Polarité'][0]  ? data.annot['Polarité'][0]  : null,
+      intensite:   data.annot['Intensité'] && data.annot['Intensité'][0] ? data.annot['Intensité'][0] : null,
+      modificateurs: data.annot['Modalisation'] || [],
+      dyades: data.dyades,
+      dyadesExclues: data.excludedDyads || [],
+      experient: data.annot['Rôle : Expérient'] && data.annot['Rôle : Expérient'][0] ? data.annot['Rôle : Expérient'][0] : null,
+      source:    data.annot['Rôle : Source']    && data.annot['Rôle : Source'][0]    ? data.annot['Rôle : Source'][0]    : null,
+      cible:     data.annot['Rôle : Cible']     && data.annot['Rôle : Cible'][0]     ? data.annot['Rôle : Cible'][0]     : null,
+      comment: data.comment,
+      groupId: annPanelState.pendingGroupId || null,
+      ts: Date.now()
+    };
+    const ti2 = annPanelState.turnIdx;
+    if (annPanelState.editingIndex !== null) {
+      annTurns[ti2].annotations[annPanelState.editingIndex] = annotation;
+    } else {
+      annTurns[ti2].annotations.push(annotation);
+    }
+    annPanelState.pendingGroupId = null;
+    annPanelState.editingIndex = null;
+    annClosePanel();
+    annRenderTurns();
+    annSaveState();
+  };
 }
 
 function annClosePanel() {
-  document.getElementById('ann-panel').classList.remove('open');
+  if (_annPopupWin && !_annPopupWin.closed) _annPopupWin.close();
+  _annPopupWin = null;
+  window._annPopupCallback = null;
+  // Deselect all words
+  document.querySelectorAll('.ann-word.selected').forEach(function(w){ w.classList.remove('selected'); });
+  document.querySelectorAll('.ann-space').forEach(function(sp){ sp.style.background = ''; });
   if (annCurrentSelection.turnIdx !== null) {
-    const ti = annCurrentSelection.turnIdx;
-    document.querySelectorAll(`.ann-word[data-turn="${ti}"]`)
-      .forEach(w => w.classList.remove('selected'));
-    // Réinitialiser les espaces puis restaurer les couleurs d'annotation
-    document.querySelectorAll(`.ann-space[data-turn="${ti}"]`)
-      .forEach(sp => sp.style.background = '');
     annRefreshWordHighlights();
   }
   annCurrentSelection.turnIdx = null;
@@ -2986,791 +2975,6 @@ function annClosePanel() {
   annPanelState.editingIndex = null;
 }
 
-// ── Chips du panneau ──
-
-// ── Mode guidé / libre ──
-
-let annGuidedMode = false; // false = libre (défaut)
-let annWizStep = 0;
-
-const ANN_WIZ_STEPS = [
-  { id: 'emotion',      label: 'Émotion(s)',    required: true  },
-  { id: 'polarite',     label: 'Polarité',      required: false },
-  { id: 'intensite',    label: 'Intensité',     required: false },
-  { id: 'modificateurs',label: 'Modificateurs', required: false },
-  { id: 'roles',        label: 'Rôles',         required: false },
-  { id: 'commentaire',  label: 'Commentaire',   required: false },
-  { id: 'recap',        label: 'Récapitulatif', required: false },
-];
-
-function annShowMode() {
-  const wizard   = document.getElementById('ann-wizard');
-  const freeform = document.getElementById('ann-freeform');
-  const modeBtn  = document.getElementById('ann-mode-btn');
-  if (annGuidedMode) {
-    wizard.style.display   = 'flex';
-    freeform.style.display = 'none';
-    modeBtn.textContent    = 'Mode libre';
-    annWizStep = 0;
-    annWizRender();
-  } else {
-    // Vider le contenu du wizard pour éviter les IDs dupliqués
-    const wizContent = document.getElementById('ann-wiz-content');
-    if (wizContent) wizContent.innerHTML = '';
-    wizard.style.display   = 'none';
-    freeform.style.display = 'block';
-    modeBtn.textContent    = 'Mode guidé';
-    annBuildChips();
-  }
-}
-
-function annToggleMode() {
-  annGuidedMode = !annGuidedMode;
-  annShowMode();
-}
-
-// ── Wizard ──
-
-function annWizRender() {
-  const step = ANN_WIZ_STEPS[annWizStep];
-  const total = ANN_WIZ_STEPS.length;
-
-  // Points de progression
-  const dots = document.getElementById('ann-wiz-dots');
-  dots.innerHTML = ANN_WIZ_STEPS.map((s, i) => {
-    const active = i === annWizStep;
-    const done   = i < annWizStep;
-    const bg = done ? 'var(--acc)' : active ? '#fff' : 'rgba(255,255,255,.25)';
-    const border = active ? '2px solid #fff' : 'none';
-    return `<div style="width:8px;height:8px;border-radius:50%;background:${bg};border:${border};flex-shrink:0;"></div>`;
-  }).join('');
-
-  document.getElementById('ann-wiz-step-label').textContent =
-    `Étape ${annWizStep + 1} / ${total} — ${step.label}`;
-
-  // Bouton retour
-  document.getElementById('ann-wiz-back').style.display = annWizStep === 0 ? 'none' : '';
-
-  // Bouton suivant / valider
-  const nextBtn = document.getElementById('ann-wiz-next');
-  const isLast  = annWizStep === total - 1;
-  nextBtn.textContent = isLast ? '✓ Valider' : (step.required ? 'Suivant →' : 'Suivant →');
-  nextBtn.style.background = isLast ? 'var(--pat)' : 'var(--acc)';
-
-  // Contenu
-  const content = document.getElementById('ann-wiz-content');
-  content.innerHTML = '';
-
-  if (step.id === 'emotion') {
-    content.appendChild(annWizEmoBlock());
-    // Ouvrir la Roue par défaut
-    setTimeout(() => annOpenSubSection('roue'), 0);
-  } else if (step.id === 'polarite') {
-    content.appendChild(annWizRadioBlock('Polarité', ANN_POL, 'polarite'));
-  } else if (step.id === 'intensite') {
-    content.appendChild(annWizRadioBlock('Intensité', ANN_INT, 'intensite'));
-  } else if (step.id === 'modificateurs') {
-    content.appendChild(annWizMultiBlock('Modificateurs', ANN_MOD, 'modificateurs'));
-  } else if (step.id === 'roles') {
-    content.appendChild(annWizRolesBlock());
-  } else if (step.id === 'commentaire') {
-    content.appendChild(annWizCommentBlock());
-  } else if (step.id === 'recap') {
-    content.appendChild(annWizRecapBlock());
-  }
-}
-
-function annWizEmoBlock() {
-  const wrap = document.createElement('div');
-
-  const title = document.createElement('div');
-  title.className = 'ann-section-title';
-  title.style.marginBottom = '10px';
-  title.innerHTML = '<span id="ann-emo-required" style="font-size:10px;color:#C0392B;display:none;">⚠ obligatoire</span>';
-  wrap.appendChild(title);
-
-  // Boutons Roue / Dyades (même logique que mode libre)
-  const btnRow = document.createElement('div');
-  btnRow.style.cssText = 'display:flex;gap:6px;margin-bottom:8px;';
-  const mkBtn = (label, which) => {
-    const b = document.createElement('button');
-    b.id = `ann-btn-${which}`;
-    b.textContent = label;
-    b.style.cssText = 'flex:1;padding:2px 8px;border-radius:100px;border:1.5px solid var(--bd);background:var(--bg);cursor:pointer;font-size:11.5px;font-family:IBM Plex Sans,sans-serif;color:var(--t2);';
-    b.onclick = () => annToggleSubSection(which);
-    return b;
-  };
-  btnRow.appendChild(mkBtn('Roue', 'roue'));
-  btnRow.appendChild(mkBtn('Dyades', 'dyades'));
-  wrap.appendChild(btnRow);
-
-  const subRoue = document.createElement('div');
-  subRoue.id = 'ann-sub-roue';
-  subRoue.style.display = 'none';
-  wrap.appendChild(subRoue);
-
-  const subDyad = document.createElement('div');
-  subDyad.id = 'ann-sub-dyades';
-  subDyad.style.display = 'none';
-  wrap.appendChild(subDyad);
-
-  const freeInput = document.createElement('input');
-  freeInput.id = 'ann-emo-free';
-  freeInput.type = 'text';
-  freeInput.placeholder = 'Émotion non listée (saisie libre)…';
-  freeInput.value = annPanelState.emotionLibre || '';
-  freeInput.style.cssText = 'margin-top:8px;width:100%;padding:5px 9px;border:1.5px solid var(--bd);border-radius:6px;font-size:12px;font-family:IBM Plex Sans,sans-serif;background:var(--bg);color:var(--t1);box-sizing:border-box;';
-  freeInput.oninput = () => annPanelState.emotionLibre = freeInput.value;
-  wrap.appendChild(freeInput);
-
-  return wrap;
-}
-
-function annWizRadioBlock(label, options, stateKey) {
-  const wrap = document.createElement('div');
-  const title = document.createElement('div');
-  title.className = 'ann-section-title';
-  title.style.marginBottom = '8px';
-  title.textContent = label;
-  wrap.appendChild(title);
-
-  const note = document.createElement('div');
-  note.style.cssText = 'font-size:11px;color:var(--t3);margin-bottom:10px;';
-  note.textContent = 'Optionnel — cliquez sur Suivant pour passer.';
-  wrap.appendChild(note);
-
-  const chips = document.createElement('div');
-  chips.className = 'ann-chips';
-  options.forEach(opt => {
-    const chip = document.createElement('span');
-    chip.className = 'ann-chip' + (annPanelState[stateKey] === opt ? ' on' : '');
-    chip.textContent = opt;
-    chip.onclick = () => {
-      chips.querySelectorAll('.ann-chip').forEach(c => c.classList.remove('on'));
-      chip.classList.add('on');
-      annPanelState[stateKey] = opt;
-    };
-    chips.appendChild(chip);
-  });
-  wrap.appendChild(chips);
-  return wrap;
-}
-
-function annWizMultiBlock(label, options, stateKey) {
-  const wrap = document.createElement('div');
-  const title = document.createElement('div');
-  title.className = 'ann-section-title';
-  title.style.marginBottom = '8px';
-  title.textContent = label;
-  wrap.appendChild(title);
-
-  const note = document.createElement('div');
-  note.style.cssText = 'font-size:11px;color:var(--t3);margin-bottom:10px;';
-  note.textContent = 'Optionnel — plusieurs choix possibles.';
-  wrap.appendChild(note);
-
-  const chips = document.createElement('div');
-  chips.className = 'ann-chips';
-  options.forEach(opt => {
-    const chip = document.createElement('span');
-    chip.className = 'ann-chip' + (annPanelState[stateKey].includes(opt) ? ' on' : '');
-    chip.textContent = opt;
-    chip.onclick = () => {
-      chip.classList.toggle('on');
-      if (chip.classList.contains('on')) annPanelState[stateKey].push(opt);
-      else annPanelState[stateKey] = annPanelState[stateKey].filter(x => x !== opt);
-    };
-    chips.appendChild(chip);
-  });
-  wrap.appendChild(chips);
-  return wrap;
-}
-
-function annWizNatureBlock() {
-  const wrap = document.createElement('div');
-  const title = document.createElement('div');
-  title.className = 'ann-section-title';
-  title.style.marginBottom = '10px';
-  title.textContent = 'Nature de l\'émotion';
-  wrap.appendChild(title);
-  const note = document.createElement('div');
-  note.style.cssText = 'font-size:11px;color:var(--t3);margin-bottom:12px;';
-  note.textContent = 'Optionnel — littérale (énoncé) ou inférée (contexte).';
-  wrap.appendChild(note);
-  const div = document.createElement('div');
-  div.id = 'ann-nature-wiz';
-  div.style.display = 'flex';
-  div.style.flexDirection = 'column';
-  div.style.gap = '8px';
-  wrap.appendChild(div);
-  setTimeout(() => annBuildNatureBlock('ann-nature-wiz'), 0);
-  return wrap;
-}
-
-function annWizRolesBlock() {
-  const wrap = document.createElement('div');
-  const title = document.createElement('div');
-  title.className = 'ann-section-title';
-  title.style.marginBottom = '8px';
-  title.textContent = 'Rôles émotionnels';
-  wrap.appendChild(title);
-
-  const note = document.createElement('div');
-  note.style.cssText = 'font-size:11px;color:var(--t3);margin-bottom:12px;';
-  note.textContent = 'Optionnel — qui ressent, qui est visé, qui rapporte.';
-  wrap.appendChild(note);
-
-  const div = document.createElement('div');
-  div.id = 'ann-roles-wiz';
-  wrap.appendChild(div);
-  // Construire via la fonction commune après insertion
-  setTimeout(() => annBuildRolesBlock('ann-roles-wiz'), 0);
-  return wrap;
-}
-
-function annWizCommentBlock() {
-  const wrap = document.createElement('div');
-  const title = document.createElement('div');
-  title.className = 'ann-section-title';
-  title.style.marginBottom = '8px';
-  title.textContent = '';
-  wrap.appendChild(title);
-
-  const note = document.createElement('div');
-  note.style.cssText = 'font-size:11px;color:var(--t3);margin-bottom:10px;';
-  note.textContent = 'Optionnel — observations, doutes, contexte…';
-  wrap.appendChild(note);
-
-  const ta = document.createElement('textarea');
-  ta.className = 'ann-comment';
-  ta.placeholder = 'Votre commentaire…';
-  ta.value = annPanelState.comment || '';
-  ta.style.width = '100%';
-  ta.oninput = () => annPanelState.comment = ta.value;
-  wrap.appendChild(ta);
-  return wrap;
-}
-
-function annWizRecapBlock() {
-  const wrap = document.createElement('div');
-  wrap.innerHTML = '<div class="ann-section-title" style="margin-bottom:12px;">Récapitulatif</div>';
-
-  const rows = [
-    ['Passage', document.getElementById('ann-panel-sel')?.textContent || '—'],
-    ['Émotions', [...annPanelState.emotions.map(id => ANN_EMO.find(e=>e.id===id)?.label||id),
-                  ...annPanelState.emotions2.map(id => annEmo2Label(id)),
-                  annPanelState.emotionLibre].filter(Boolean).join(', ') || '—'],
-    ['Polarité', annPanelState.polarite || '—'],
-    ['Intensité', annPanelState.intensite || '—'],
-    ['Modificateurs', annPanelState.modificateurs.join(', ') || '—'],
-    ['Émotion littérale',  annPanelState.emotionLitterale || '—'],
-    ['Émotion inférée',    annPanelState.emotionInferee   || '—'],
-    ['Expérient', annPanelState.experient || '—'],
-    ['Cible', annPanelState.cible || '—'],
-    ['Source', annPanelState.source || '—'],
-    ['Commentaire', annPanelState.comment || '—'],
-  ];
-
-  rows.forEach(([k, v]) => {
-    const row = document.createElement('div');
-    row.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;font-size:12.5px;';
-    row.innerHTML = `<span style="color:var(--t3);min-width:90px;flex-shrink:0;">${k}</span><span style="color:var(--t1);font-weight:500;">${v}</span>`;
-    wrap.appendChild(row);
-  });
-
-  return wrap;
-}
-
-function annWizBack() {
-  if (annWizStep > 0) { annWizStep--; annWizRender(); }
-}
-
-function annWizNext() {
-  const step = ANN_WIZ_STEPS[annWizStep];
-  // Validation étape émotion
-  if (step.id === 'emotion') {
-    const hasEmo = annPanelState.emotions.length > 0 || annPanelState.emotions2.length > 0 || (annPanelState.emotionLibre||'').trim();
-    if (!hasEmo) {
-      const req = document.getElementById('ann-emo-required');
-      if (req) { req.style.display = 'inline'; req.animate([{opacity:0},{opacity:1},{opacity:0},{opacity:1}],{duration:600}); }
-      return;
-    }
-  }
-  if (annWizStep < ANN_WIZ_STEPS.length - 1) {
-    annWizStep++;
-    annWizRender();
-  } else {
-    annValidate();
-  }
-}
-
-// Roue de Plutchik complète — 3 intensités par axe
-const ANN_ROUE = [
-  { weak:'Sérénité',    basic:{id:'joie',        label:'Joie',         color:'#E6A817'}, strong:'Extase'          },
-  { weak:'Acceptation', basic:{id:'confiance',    label:'Confiance',    color:'#27AE60'}, strong:'Admiration'      },
-  { weak:'Appréhension',basic:{id:'peur',         label:'Peur',         color:'#7B5EA7'}, strong:'Terreur'         },
-  { weak:'Distraction', basic:{id:'surprise',     label:'Surprise',     color:'#16A085'}, strong:'Étonnement'      },
-  { weak:'Songerie',    basic:{id:'tristesse',    label:'Tristesse',    color:'#4E72D6'}, strong:'Chagrin'         },
-  { weak:'Ennui',       basic:{id:'degout',       label:'Dégoût',       color:'#7F8C8D'}, strong:'Aversion'        },
-  { weak:'Contrariété', basic:{id:'colere',       label:'Colère',       color:'#C0392B'}, strong:'Rage'            },
-  { weak:'Intérêt',     basic:{id:'anticipation', label:'Anticipation', color:'#D35400'}, strong:'Vigilance'       },
-];
-
-const ANN_DYADES = [
-  ['Amour','Sentimentalité','Fierté','Espoir','Optimisme','Allégresse'],
-  ['Soumission','Domination','Envie'],
-  ['Effroi','Anxiété','Désespoir','Pessimisme','Morbidité'],
-  ['Honte','Remords','Culpabilité'],
-  ['Indignation','Agressivité','Mépris','Cynisme'],
-  ['Curiosité','Incrédulité','Désappointement'],
-];
-
-// Compatibilité : retrouver le label d'une émotion secondaire par son id
-function annEmo2Label(id) {
-  // Format: sec_label_normalise
-  if (!id) return id;
-  const fromId = id.replace(/^sec_/, '').replace(/_/g, ' ');
-  // Chercher dans Roue (weak/strong)
-  for (const row of ANN_ROUE) {
-    if (row.weak.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s/g,'_') === id.replace(/^sec_/,''))
-      return row.weak;
-    if (row.strong.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s/g,'_') === id.replace(/^sec_/,''))
-      return row.strong;
-  }
-  // Chercher dans Dyades
-  for (const group of ANN_DYADES) {
-    for (const label of group) {
-      if (label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s/g,'_') === id.replace(/^sec_/,''))
-        return label;
-    }
-  }
-  // Fallback : remettre en forme l'id
-  return fromId.charAt(0).toUpperCase() + fromId.slice(1);
-}
-
-
-const ANN_NATURE_FIELDS = [
-  { id:'emotionLitterale', label:'Émotion littérale',        hint:'Exprimée directement par l\'énoncé' },
-  { id:'emotionInferee',   label:'Émotion inférée / implicite', hint:'Déduite du contexte'            },
-];
-
-function annBuildNatureBlock(containerId) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  container.innerHTML = '';
-  ANN_NATURE_FIELDS.forEach(field => {
-    const row = document.createElement('div');
-    row.className = 'ann-nature-row';
-
-    const lbl = document.createElement('span');
-    lbl.className = 'ann-nature-row-label';
-    lbl.innerHTML = `${field.label}<small>${field.hint}</small>`;
-    row.appendChild(lbl);
-
-    ['Oui','Non'].forEach(val => {
-      const chip = document.createElement('span');
-      chip.className = 'ann-nature-chip';
-      chip.textContent = val;
-      const cls = val === 'Oui' ? 'on-oui' : 'on-non';
-      if (annPanelState[field.id] === val) chip.classList.add(cls);
-      chip.onclick = () => {
-        // Toggle
-        if (annPanelState[field.id] === val) {
-          annPanelState[field.id] = null;
-          chip.classList.remove(cls);
-        } else {
-          annPanelState[field.id] = val;
-          // Désélectionner l'autre chip de la même ligne
-          row.querySelectorAll('.ann-nature-chip').forEach(c => c.classList.remove('on-oui','on-non'));
-          chip.classList.add(cls);
-        }
-      };
-      row.appendChild(chip);
-    });
-
-    container.appendChild(row);
-  });
-}
-
-function annBuildRolesBlock(containerId) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  container.innerHTML = '';
-
-  const table = document.createElement('table');
-  table.className = 'ann-role-grid';
-
-  // En-tête avec abréviations
-  const thead = document.createElement('thead');
-  const hrow = document.createElement('tr');
-  const thEmpty = document.createElement('th');
-  hrow.appendChild(thEmpty);
-  ANN_ROLE_OPTS.forEach(opt => {
-    const th = document.createElement('th');
-    th.textContent = opt.label;
-    th.title = opt.value;
-    hrow.appendChild(th);
-  });
-  thead.appendChild(hrow);
-  table.appendChild(thead);
-
-  // Corps : une ligne par rôle
-  const tbody = document.createElement('tbody');
-  ANN_ROLES.forEach(role => {
-    const tr = document.createElement('tr');
-    tr.title = role.title;
-
-    const tdLabel = document.createElement('td');
-    tdLabel.textContent = 'Rôle: ' + role.label;
-    tr.appendChild(tdLabel);
-
-    ANN_ROLE_OPTS.forEach(opt => {
-      const td = document.createElement('td');
-      const radio = document.createElement('input');
-      radio.type = 'radio';
-      radio.name = `ann-role-${containerId}-${role.id}`;
-      radio.value = opt.value;
-      radio.checked = annPanelState[role.id] === opt.value;
-
-      // Toggle : recliquer désélectionne
-      radio.addEventListener('click', function() {
-        if (annPanelState[role.id] === opt.value) {
-          this.checked = false;
-          annPanelState[role.id] = null;
-        } else {
-          annPanelState[role.id] = opt.value;
-        }
-      });
-
-      td.appendChild(radio);
-      tr.appendChild(td);
-    });
-
-    tbody.appendChild(tr);
-  });
-  table.appendChild(tbody);
-  container.appendChild(table);
-}
-function annBuildChips() {
-  // Polarité (radio)
-  annBuildRadioChips('ann-chips-pol', ANN_POL, v => annPanelState.polarite = v);
-  // Intensité (radio)
-  annBuildRadioChips('ann-chips-int', ANN_INT, v => annPanelState.intensite = v);
-  // Modificateurs (multi)
-  const modDiv = document.getElementById('ann-chips-mod');
-  modDiv.innerHTML = '';
-  ANN_MOD.forEach(m => {
-    const chip = document.createElement('span');
-    chip.className = 'ann-chip';
-    chip.textContent = m;
-    chip.onclick = () => {
-      chip.classList.toggle('on');
-      if (chip.classList.contains('on')) annPanelState.modificateurs.push(m);
-      else annPanelState.modificateurs = annPanelState.modificateurs.filter(x=>x!==m);
-    };
-    modDiv.appendChild(chip);
-  });
-  // Rôles émotionnels
-  annBuildRolesBlock('ann-roles-free');
-}
-
-function annMakeSecondaryChip(label) {
-  const id = 'sec_' + label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s/g,'_');
-  const chip = document.createElement('span');
-  chip.className = 'ann-chip' + (annPanelState.emotions2.includes(id) ? ' on' : '');
-  chip.textContent = label;
-  chip.onclick = () => {
-    chip.classList.toggle('on');
-    // Synchroniser tous les chips du même label dans la page
-    document.querySelectorAll('.ann-chip').forEach(c => {
-      if (c.textContent === label && c !== chip) c.classList.toggle('on', chip.classList.contains('on'));
-    });
-    if (chip.classList.contains('on')) { if (!annPanelState.emotions2.includes(id)) annPanelState.emotions2.push(id); }
-    else annPanelState.emotions2 = annPanelState.emotions2.filter(x => x !== id);
-    if (annPanelState.emotions.length > 0 || annPanelState.emotions2.length > 0)
-      document.getElementById('ann-emo-required') && (document.getElementById('ann-emo-required').style.display = 'none');
-  };
-  return chip;
-}
-
-function annBuildRoue(containerId) {
-  const div = document.getElementById(containerId);
-  if (!div) return;
-  div.innerHTML = '';
-  ANN_ROUE.forEach(row => {
-    const rowDiv = document.createElement('div');
-    rowDiv.style.cssText = 'display:flex;align-items:center;gap:4px;margin-bottom:4px;';
-
-    // Faible
-    const c1 = annMakeSecondaryChip(row.weak);
-    rowDiv.appendChild(c1);
-
-    // Base (émotion primaire)
-    const cb = document.createElement('span');
-    cb.className = 'ann-chip' + (annPanelState.emotions.includes(row.basic.id) ? ' emo-on' : '');
-    cb.textContent = row.basic.label;
-    cb.style.fontWeight = '700';
-    if (annPanelState.emotions.includes(row.basic.id)) {
-      cb.style.background = row.basic.color;
-      cb.style.color = '#fff';
-      cb.style.borderColor = row.basic.color;
-    }
-    cb.onclick = () => {
-      const on = cb.classList.toggle('emo-on');
-      cb.style.background  = on ? row.basic.color : '';
-      cb.style.color       = on ? '#fff' : '';
-      cb.style.borderColor = on ? row.basic.color : '';
-      if (on) { if (!annPanelState.emotions.includes(row.basic.id)) annPanelState.emotions.push(row.basic.id); }
-      else annPanelState.emotions = annPanelState.emotions.filter(x => x !== row.basic.id);
-      document.getElementById('ann-emo-required') && (document.getElementById('ann-emo-required').style.display = 'none');
-    };
-    rowDiv.appendChild(cb);
-
-    // Fort
-    const c2 = annMakeSecondaryChip(row.strong);
-    rowDiv.appendChild(c2);
-
-    div.appendChild(rowDiv);
-  });
-
-  // Bouton "Indéterminée" sous la roue
-  const btnIndet = document.createElement('span');
-  const indetOn = annPanelState.emotions.includes('indeterminee');
-  btnIndet.className = 'ann-chip' + (indetOn ? ' emo-on' : '');
-  btnIndet.textContent = 'Indéterminée';
-  if (indetOn) {
-    btnIndet.style.background = '#9E9E9E';
-    btnIndet.style.color = '#fff';
-    btnIndet.style.borderColor = '#9E9E9E';
-  }
-  btnIndet.style.marginTop = '6px';
-  btnIndet.onclick = () => {
-    const on = !annPanelState.emotions.includes('indeterminee');
-    if (on) annPanelState.emotions.push('indeterminee');
-    else annPanelState.emotions = annPanelState.emotions.filter(x => x !== 'indeterminee');
-    annBuildRoue(containerId);
-  };
-  div.appendChild(btnIndet);
-}
-
-function annBuildDyades(containerId) {
-  const div = document.getElementById(containerId);
-  if (!div) return;
-  div.innerHTML = '';
-  ANN_DYADES.forEach(group => {
-    const rowDiv = document.createElement('div');
-    rowDiv.className = 'ann-chips';
-    rowDiv.style.marginBottom = '5px';
-    group.forEach(label => rowDiv.appendChild(annMakeSecondaryChip(label)));
-    div.appendChild(rowDiv);
-  });
-
-  // Bouton "Indéterminée" sous les dyades
-  const btnIndet = document.createElement('span');
-  const indetOn = annPanelState.emotions.includes('indeterminee');
-  btnIndet.className = 'ann-chip' + (indetOn ? ' emo-on' : '');
-  btnIndet.textContent = 'Indéterminée';
-  if (indetOn) {
-    btnIndet.style.background = '#9E9E9E';
-    btnIndet.style.color = '#fff';
-    btnIndet.style.borderColor = '#9E9E9E';
-  }
-  btnIndet.style.marginTop = '6px';
-  btnIndet.onclick = () => {
-    const on = !annPanelState.emotions.includes('indeterminee');
-    if (on) annPanelState.emotions.push('indeterminee');
-    else annPanelState.emotions = annPanelState.emotions.filter(x => x !== 'indeterminee');
-    annBuildDyades(containerId);
-  };
-  div.appendChild(btnIndet);
-}
-
-function annOpenSubSection(which) {
-  const roueDiv  = document.getElementById('ann-sub-roue');
-  const dyadDiv  = document.getElementById('ann-sub-dyades');
-  const btnRoue  = document.getElementById('ann-btn-roue');
-  const btnDyad  = document.getElementById('ann-btn-dyades');
-
-  roueDiv.style.display = 'none';
-  dyadDiv.style.display = 'none';
-  [btnRoue, btnDyad].forEach(b => { if(b){ b.style.background='var(--bg)'; b.style.borderColor='var(--bd)'; b.style.color='var(--t2)'; b.style.fontWeight=''; }});
-
-  if (which === 'roue') {
-    annBuildRoue('ann-sub-roue');
-    roueDiv.style.display = 'block';
-    if(btnRoue){ btnRoue.style.background='var(--acc)'; btnRoue.style.borderColor='var(--acc)'; btnRoue.style.color='#fff'; btnRoue.style.fontWeight='500'; }
-  } else {
-    annBuildDyades('ann-sub-dyades');
-    dyadDiv.style.display = 'block';
-    if(btnDyad){ btnDyad.style.background='var(--acc)'; btnDyad.style.borderColor='var(--acc)'; btnDyad.style.color='#fff'; btnDyad.style.fontWeight='500'; }
-  }
-}
-
-function annToggleSubSection(which) {
-  const roueDiv  = document.getElementById('ann-sub-roue');
-  const dyadDiv  = document.getElementById('ann-sub-dyades');
-  const btnRoue  = document.getElementById('ann-btn-roue');
-  const btnDyad  = document.getElementById('ann-btn-dyades');
-
-  const isActive = (which === 'roue' ? roueDiv : dyadDiv).style.display !== 'none';
-
-  // Toggle
-  roueDiv.style.display = 'none';
-  dyadDiv.style.display = 'none';
-  [btnRoue, btnDyad].forEach(b => { if(b){ b.style.background='var(--bg)'; b.style.borderColor='var(--bd)'; b.style.color='var(--t2)'; b.style.fontWeight=''; }});
-
-  if (!isActive) {
-    if (which === 'roue') {
-      annBuildRoue('ann-sub-roue');
-      roueDiv.style.display = 'block';
-      btnRoue.style.background  = 'var(--acc)';
-      btnRoue.style.borderColor = 'var(--acc)';
-      btnRoue.style.color       = '#fff';
-      btnRoue.style.fontWeight  = '500';
-    } else {
-      annBuildDyades('ann-sub-dyades');
-      dyadDiv.style.display = 'block';
-      btnDyad.style.background  = 'var(--acc)';
-      btnDyad.style.borderColor = 'var(--acc)';
-      btnDyad.style.color       = '#fff';
-      btnDyad.style.fontWeight  = '500';
-    }
-  }
-}
-
-// Alias pour compatibilité
-function annFilterEmo2() {}
-function annFilterCustom() {}
-
-function annToggleSecondaryEmo() {
-  const sec = document.getElementById('ann-emo-secondary');
-  const btn = document.getElementById('ann-emo-plus-btn');
-  const visible = sec.style.display !== 'none';
-  sec.style.display = visible ? 'none' : 'block';
-  btn.textContent = visible ? '+ Plus' : '− Moins';
-}
-
-function annBuildRadioChips(containerId, options, onChange) {
-  const div = document.getElementById(containerId);
-  div.innerHTML = '';
-  options.forEach(opt => {
-    const chip = document.createElement('span');
-    chip.className = 'ann-chip';
-    chip.textContent = opt;
-    chip.onclick = () => {
-      const already = chip.classList.contains('on');
-      div.querySelectorAll('.ann-chip').forEach(c => c.classList.remove('on'));
-      if (!already) {
-        chip.classList.add('on');
-        onChange(opt);
-      } else {
-        onChange(null); // désactivé
-      }
-    };
-    div.appendChild(chip);
-  });
-}
-
-// ── Validation ──
-
-function annValidate() {
-  const { turnIdx, wordIndices, emotions, emotions2, emotionLibre, polarite, intensite, modificateurs } = annPanelState;
-  if (turnIdx === null) return;
-
-  // Obligation : au moins une émotion cochée (principale ou secondaire ou libre)
-  const hasEmotion = emotions.length > 0 || emotions2.length > 0 || (emotionLibre && emotionLibre.trim());
-  if (!hasEmotion) {
-    const req = document.getElementById('ann-emo-required');
-    req.style.display = 'inline';
-    req.animate([{opacity:0},{opacity:1},{opacity:0},{opacity:1}], {duration:600});
-    return;
-  }
-
-  const selectedSpans = [...document.querySelectorAll(`.ann-word[data-turn="${turnIdx}"].selected`)];
-  // Construire le texte avec […] entre segments non contigus
-  const textParts = [];
-  for (let i = 0; i < selectedSpans.length; i++) {
-    if (i > 0 && wordIndices[i] > wordIndices[i-1] + 1) textParts.push('[…]');
-    textParts.push(selectedSpans[i].textContent);
-  }
-  const text = textParts.join(' ');
-  const commentEl = document.getElementById('ann-comment');
-  const comment = annPanelState.comment || (commentEl ? commentEl.value.trim() : '');
-
-  const annotation = {
-    text, wordIndices, emotions, emotions2,
-    emotionLibre: emotionLibre?.trim() || '',
-    annotationType: annAnnotationMode,
-    emotionLitterale: annPanelState.emotionLitterale || null,
-    emotionInferee:   annPanelState.emotionInferee   || null,
-    polarite, intensite, modificateurs,
-    experient: annPanelState.experient || null,
-    cible:     annPanelState.cible     || null,
-    source:    annPanelState.source    || null,
-    comment,
-    groupId: annPanelState.pendingGroupId || null,
-    ts: Date.now()
-  };
-
-  // Remplacement si édition, ajout sinon
-  if (annPanelState.editingIndex !== null) {
-    annTurns[turnIdx].annotations[annPanelState.editingIndex] = annotation;
-  } else {
-    annTurns[turnIdx].annotations.push(annotation);
-  }
-  annPanelState.pendingGroupId = null;
-  annPanelState.editingIndex = null;
-
-  annClosePanel();
-  annRenderTurns();
-  annSaveState();
-}
-
-function annAddDiscontiguousSegment(ti, groupId, sourceAnn) {
-  // Préparer le panneau pour un nouveau segment lié au même groupe
-  annCurrentSelection.turnIdx = ti;
-  // Vider la sélection courante
-  document.querySelectorAll(`.ann-word[data-turn="${ti}"].selected`).forEach(w => w.classList.remove('selected'));
-
-  // Stocker le groupId pour la prochaine validation
-  annPanelState.pendingGroupId = groupId;
-  // Mettre aussi à jour le groupId de l'annotation source si elle n'en avait pas
-  const src = annTurns[ti].annotations.find(a => a === sourceAnn);
-  if (src && !src.groupId) src.groupId = groupId;
-
-  // Ouvrir un panneau vide en indiquant le contexte
-  annPanelState = {
-    ...annPanelState,
-    turnIdx: ti, wordIndices: [],
-    emotions: [...(sourceAnn.emotions||[])],
-    emotions2: [...(sourceAnn.emotions2||[])],
-    emotionLibre: sourceAnn.emotionLibre||'',
-    polarite: sourceAnn.polarite,
-    intensite: sourceAnn.intensite,
-    modificateurs: [...(sourceAnn.modificateurs||[])],
-    comment: sourceAnn.comment||'',
-    pendingGroupId: groupId
-  };
-
-  document.getElementById('ann-panel-sel').textContent = '⋯ Sélectionnez le segment discontinu…';
-  document.getElementById('ann-comment').value = sourceAnn.comment||'';
-  annBuildChips();
-  // Pré-cocher les mêmes émotions
-  setTimeout(() => {
-    document.querySelectorAll('#ann-chips-emo .ann-chip').forEach(chip => {
-      const emo = ANN_EMO.find(e => chip.textContent.includes(e.label));
-      if (emo && annPanelState.emotions.includes(emo.id)) {
-        chip.classList.add('emo-on'); chip.style.background=emo.color; chip.style.color='#fff';
-      }
-    });
-    document.querySelectorAll('#ann-chips-pol .ann-chip').forEach(c => { if(c.textContent===sourceAnn.polarite) c.classList.add('on'); });
-    document.querySelectorAll('#ann-chips-int .ann-chip').forEach(c => { if(c.textContent===sourceAnn.intensite) c.classList.add('on'); });
-    document.querySelectorAll('#ann-chips-mod .ann-chip').forEach(c => { if((sourceAnn.modificateurs||[]).includes(c.textContent)) c.classList.add('on'); });
-  }, 20);
-  document.getElementById('ann-panel').classList.add('open');
-  // Attendre la sélection de l'utilisateur — la validation se déclenchera normalement
-  // mais il faut intercepter le click sur les mots pour mettre à jour wordIndices
-}
 
 function annDeleteAnnotation(ti, ai) {
   annTurns[ti].annotations.splice(ai, 1);
@@ -3792,89 +2996,7 @@ function annEditAnnotation(ti, ai) {
   });
 
   const selectedSpans = [...document.querySelectorAll(`.ann-word[data-turn="${ti}"].selected`)];
-  annOpenPanel(ti, selectedSpans);
-  annPanelState.editingIndex = ai;
-
-  setTimeout(() => {
-    annPanelState.emotions      = [...(ann.emotions||[])];
-    annPanelState.emotions2     = [...(ann.emotions2||[])];
-    annPanelState.emotionLibre  = ann.emotionLibre||'';
-    annPanelState.polarite      = ann.polarite;
-    annPanelState.intensite     = ann.intensite;
-    annPanelState.modificateurs = [...(ann.modificateurs||[])];
-    annPanelState.experient     = ann.experient || null;
-    annPanelState.cible         = ann.cible     || null;
-    annPanelState.source        = ann.source    || null;
-
-    // ── Roue : recocher émotions primaires (dans ann.emotions)
-    // Ouvrir la Roue si des émotions primaires ou secondaires existent
-    if ((ann.emotions||[]).length > 0 || (ann.emotions2||[]).length > 0) {
-      annOpenSubSection('roue');
-      // Laisser le DOM se construire
-      setTimeout(() => {
-        // Primaires (dans la Roue, bouton central coloré)
-        document.querySelectorAll('#ann-sub-roue .ann-chip').forEach(chip => {
-          // Chercher si ce chip correspond à une émotion primaire
-          const emo = ANN_EMO.find(e => e.label === chip.textContent.trim());
-          if (emo && (ann.emotions||[]).includes(emo.id)) {
-            chip.classList.add('emo-on');
-            chip.style.background  = emo.color;
-            chip.style.color       = '#fff';
-            chip.style.borderColor = emo.color;
-          }
-          // Secondaires (faibles/forts dans la Roue)
-          const secId = 'sec_' + chip.textContent.trim().toLowerCase()
-            .normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s/g,'_');
-          if ((ann.emotions2||[]).includes(secId)) chip.classList.add('on');
-        });
-      }, 10);
-    } else {
-      // Pas d'émotions primaires/secondaires : ouvrir la Roue quand même pour faciliter l'édition
-      annOpenSubSection('roue');
-    }
-
-    // ── Dyades : recocher si des emotions2 sont des dyades
-    const dyadeLabels = ANN_DYADES.flat();
-    const hasDyades = (ann.emotions2||[]).some(id => {
-      const lbl = annEmo2Label(id);
-      return dyadeLabels.includes(lbl);
-    });
-    if (hasDyades) {
-      annToggleSubSection('dyades');
-      setTimeout(() => {
-        document.querySelectorAll('#ann-sub-dyades .ann-chip').forEach(chip => {
-          const secId = 'sec_' + chip.textContent.trim().toLowerCase()
-            .normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s/g,'_');
-          if ((ann.emotions2||[]).includes(secId)) chip.classList.add('on');
-        });
-      }, 10);
-    }
-
-    // Saisie libre
-    const freeInput = document.getElementById('ann-emo-free');
-    if (freeInput) { freeInput.value = ann.emotionLibre||''; }
-
-    // Polarité, Intensité, Modificateurs
-    document.querySelectorAll('#ann-chips-pol .ann-chip').forEach(c => { if (c.textContent===ann.polarite) c.classList.add('on'); });
-    document.querySelectorAll('#ann-chips-int .ann-chip').forEach(c => { if (c.textContent===ann.intensite) c.classList.add('on'); });
-    document.querySelectorAll('#ann-chips-mod .ann-chip').forEach(c => { if ((ann.modificateurs||[]).includes(c.textContent)) c.classList.add('on'); });
-
-    // Commentaire
-    const commentEl = document.getElementById('ann-comment');
-    if (commentEl) commentEl.value = ann.comment||'';
-    annPanelState.comment = ann.comment||'';
-
-    // Reconstruire le bloc Rôles avec les valeurs restaurées
-    annBuildRolesBlock('ann-roles-free');
-  }, 20);
-
-  annRenderTurns();
-  annCurrentSelection.turnIdx = ti;
-  ann.wordIndices.forEach(wi => {
-    const span = document.querySelector(`.ann-word[data-turn="${ti}"][data-word="${wi}"]`);
-    if (span) span.classList.add('selected');
-  });
-  annColorSelectionSpaces(ti);
+  annOpenPanel(ti, selectedSpans, ann, ai);
 }
 
 function annColorSelectionSpaces(ti) {
@@ -3973,6 +3095,41 @@ function llmOnModelChange(sel) {
   const ep  = opt.getAttribute('data-ep');
   // Update both possible endpoint fields
   ['llm-ep','llm-ep2'].forEach(id => { const el = document.getElementById(id); if(el && ep) el.value = ep; });
+  llmCheckModelAvailability(sel.value, ep);
+}
+
+// Vérifie si le modèle Ollama sélectionné est déjà téléchargé localement,
+// et affiche la commande `ollama pull` correspondante sinon.
+async function llmCheckModelAvailability(modelName, endpoint) {
+  const status = document.getElementById('llm-model-status');
+  if (!status) return;
+
+  // Ne vérifier que pour Ollama local (les APIs distantes sont désactivées de toute façon)
+  if (!endpoint || !endpoint.includes('11434')) { status.textContent = ''; return; }
+
+  status.style.color = 'var(--t3)';
+  status.textContent = 'Vérification…';
+
+  try {
+    const res = await fetch('http://localhost:11434/api/tags');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    // Normaliser : un tag sans ':' est implicitement ':latest' côté Ollama
+    const normalize = t => (t.includes(':') ? t : t + ':latest');
+    const installed = (data.models || []).map(m => normalize(m.name || m.model || ''));
+    const wanted = normalize(modelName);
+
+    if (installed.includes(wanted)) {
+      status.style.color = '#27AE60';
+      status.textContent = '✓ Modèle déjà téléchargé';
+    } else {
+      status.style.color = '#E67E22';
+      status.innerHTML = `⚠ Modèle non téléchargé — exécutez : <code style="background:#f3f4f6;padding:1px 5px;border-radius:4px;">ollama pull ${modelName}</code>`;
+    }
+  } catch (e) {
+    status.style.color = 'var(--t3)';
+    status.textContent = 'Impossible de vérifier (Ollama non lancé ?)';
+  }
 }
 
 function llmGetEndpoint() {
@@ -4006,55 +3163,124 @@ async function llmTestConnection() {
   }
 }
 
-function llmDownloadBatch() {
-  const bat = [
-    '@echo off',
-    'echo === Apaise+ - Demarrage ===',
-    'echo.',
-    '',
-    ':: 1. Verifier si Ollama est installe',
-    'where ollama >nul 2>&1',
-    'if %errorlevel% neq 0 (',
-    '    echo Ollama non detecte. Telechargement en cours...',
-    "    powershell -NoProfile -Command \"Invoke-WebRequest -Uri 'https://ollama.com/download/OllamaSetup.exe' -OutFile '%TEMP%\\OllamaSetup.exe'\"",
-    "    echo Installation d'Ollama...",
-    '    "%TEMP%\\OllamaSetup.exe" /S',
-    '    timeout /t 10 /nobreak >nul',
-    '    echo Ollama installe.',
-    ')',
-    '',
-    ':: 2. Arreter toute instance existante',
-    "echo Arret de l'instance Ollama existante...",
-    'taskkill /F /IM ollama.exe /T 2>nul',
-    'timeout /t 2 /nobreak >nul',
-    '',
-    ':: 3. Demarrer Ollama avec CORS ouvert',
-    'echo Demarrage de Ollama avec CORS ouvert...',
-    'set OLLAMA_ORIGINS=*',
-    'start "" ollama serve',
-    'echo Attente du demarrage du serveur...',
-    'timeout /t 5 /nobreak >nul',
-    '',
-    ':: 4. Verifier si mistral est installe, sinon le telecharger',
-    'echo Verification du modele mistral...',
-    'ollama list | findstr "mistral" >nul 2>&1',
-    'if %errorlevel% neq 0 (',
-    '    echo Telechargement du modele mistral (4 Go, patience...)',
-    '    ollama pull mistral',
-    ') else (',
-    '    echo Modele mistral OK.',
-    ')',
-    '',
-    ':: 5. Ouvrir Apaise+',
-    'echo.',
-    'echo Choisissez votre fichier Apaise+...',
-    "powershell -NoProfile -Command \"Add-Type -AssemblyName System.Windows.Forms; $f=New-Object System.Windows.Forms.OpenFileDialog; $f.Filter='Fichiers HTML (*.html)|*.html'; $f.Title='Ouvrir Apaise+'; if($f.ShowDialog() -eq 'OK'){Start-Process $f.FileName}\"",
-    'echo Fermeture...',
-  ].join('\r\n');
-  const blob = new Blob([bat], {type:'text/plain'});
+function llmDownloadBatch(os) {
+  let script, filename, mime;
+
+  if (os === 'windows') {
+    script = [
+      '@echo off',
+      'echo === Apaise+ - Demarrage ===',
+      'echo.',
+      ':: 1. Verifier si Ollama est installe',
+      'where ollama >nul 2>&1',
+      'if %errorlevel% neq 0 (',
+      '    echo Ollama non detecte. Telechargement en cours...',
+      "    powershell -NoProfile -Command \"Invoke-WebRequest -Uri 'https://ollama.com/download/OllamaSetup.exe' -OutFile '%TEMP%\\OllamaSetup.exe'\"",
+      "    echo Installation d'Ollama...",
+      '    "%TEMP%\\OllamaSetup.exe" /S',
+      '    timeout /t 10 /nobreak >nul',
+      ')',
+      ':: 2. Arreter instance existante',
+      "taskkill /F /IM ollama.exe /T 2>nul",
+      'timeout /t 2 /nobreak >nul',
+      ':: 3. Demarrer Ollama avec CORS ouvert',
+      'set OLLAMA_ORIGINS=*',
+      'start "" ollama serve',
+      'timeout /t 5 /nobreak >nul',
+      ':: 4. Verifier modele mistral',
+      'ollama list | findstr "mistral" >nul 2>&1',
+      'if %errorlevel% neq 0 ( ollama pull mistral )',
+      ':: 5. Ouvrir Apaise+',
+      "powershell -NoProfile -Command \"Add-Type -AssemblyName System.Windows.Forms; $f=New-Object System.Windows.Forms.OpenFileDialog; $f.Filter='Fichiers HTML (*.html)|*.html'; $f.Title='Ouvrir Apaise+'; if($f.ShowDialog() -eq 'OK'){Start-Process $f.FileName}\"",
+    ].join('\r\n');
+    filename = 'start_apaise.bat';
+    mime = 'text/plain';
+
+  } else if (os === 'mac') {
+    script = `#!/bin/bash
+echo "=== Apaise+ - Démarrage ==="
+
+# 1. Vérifier si Ollama est installé
+if ! command -v ollama &>/dev/null; then
+  echo "Ollama non détecté. Téléchargement..."
+  curl -fsSL https://ollama.com/install.sh | sh
+fi
+
+# 2. Arrêter instance existante
+pkill -f "ollama serve" 2>/dev/null
+sleep 2
+
+# 3. Démarrer Ollama avec CORS ouvert
+export OLLAMA_ORIGINS="*"
+ollama serve &>/tmp/ollama.log &
+sleep 4
+
+# 4. Vérifier modèle mistral
+if ! ollama list | grep -q "mistral"; then
+  echo "Téléchargement du modèle mistral (4 Go)..."
+  ollama pull mistral
+fi
+
+# 5. Choisir et ouvrir le fichier Apaise+
+FILE=$(osascript -e 'tell application "Finder" to set f to choose file with prompt "Choisissez votre fichier Apaise+" of type {"html"}" as POSIX path' 2>/dev/null)
+if [ -n "$FILE" ]; then
+  open "$FILE"
+else
+  echo "Aucun fichier sélectionné."
+fi
+`;
+    filename = 'start_apaise.command';
+    mime = 'text/plain';
+
+  } else if (os === 'linux') {
+    script = `#!/bin/bash
+echo "=== Apaise+ - Démarrage ==="
+
+# 1. Vérifier si Ollama est installé
+if ! command -v ollama &>/dev/null; then
+  echo "Ollama non détecté. Téléchargement..."
+  curl -fsSL https://ollama.com/install.sh | sh
+fi
+
+# 2. Arrêter instance existante
+pkill -f "ollama serve" 2>/dev/null
+sleep 2
+
+# 3. Démarrer Ollama avec CORS ouvert
+export OLLAMA_ORIGINS="*"
+ollama serve &>/tmp/ollama.log &
+sleep 4
+
+# 4. Vérifier modèle mistral
+if ! ollama list | grep -q "mistral"; then
+  echo "Téléchargement du modèle mistral (4 Go)..."
+  ollama pull mistral
+fi
+
+# 5. Choisir et ouvrir le fichier Apaise+
+# Essayer zenity, puis kdialog, sinon demander le chemin
+if command -v zenity &>/dev/null; then
+  FILE=$(zenity --file-selection --title="Choisissez votre fichier Apaise+" --file-filter="*.html")
+elif command -v kdialog &>/dev/null; then
+  FILE=$(kdialog --getopenfilename . "*.html" --title "Choisissez votre fichier Apaise+")
+else
+  read -rp "Chemin vers votre fichier Apaise+ : " FILE
+fi
+
+if [ -n "$FILE" ]; then
+  xdg-open "$FILE"
+else
+  echo "Aucun fichier sélectionné."
+fi
+`;
+    filename = 'start_apaise.sh';
+    mime = 'text/plain';
+  }
+
+  const blob = new Blob([script], {type: mime});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'start_apaise.bat';
+  a.download = filename;
   a.click();
 }
 
@@ -4135,13 +3361,13 @@ var _gINTENS = {
 };
 var _gLEX = {
   'Joie':['bonheur','plaisir','satisfaction','enthousiasme','ga\u00eet\u00e9','euphorie','bien-\u00eatre'],
-  'Confiance':['s\u00e9curit\u00e9','s\u00e9r\u00e9nit\u00e9','acceptation','foi','fiabilit\u00e9','stabilit\u00e9','certitude'],
-  'Peur':['anxi\u00e9t\u00e9','appr\u00e9hension','crainte','angoisse','inqui\u00e9tude','effroi','ins\u00e9curit\u00e9'],
-  'Surprise':['\u00e9tonnement','stup\u00e9faction','perplexit\u00e9','incr\u00e9dulit\u00e9','saisissement','d\u00e9sorientation','inattendu'],
-  'Tristesse':['chagrin','m\u00e9lancolie','d\u00e9sespoir','abattement','deuil','nostalgie','d\u00e9couragement'],
-  'D\u00e9go\u00fbt':['r\u00e9pugnance','aversion','\u00e9c\u0153urement','m\u00e9pris','rejet','r\u00e9pulsion','horreur'],
-  'Col\u00e8re':['irritation','frustration','indignation','rage','exasp\u00e9ration','ressentiment','hostilit\u00e9'],
-  'Anticipation':['attente','espoir','impatience','pr\u00e9paration','pr\u00e9vision','vigilance','curiosit\u00e9']
+  'Confiance':['s\u00e9curit\u00e9','s\u00e9r\u00e9nit\u00e9','rassur\u00e9','foi','stabilit\u00e9','compter sur','croire en'],
+  'Peur':['anxi\u00e9t\u00e9','appr\u00e9hension','angoisse','effroi','ins\u00e9curit\u00e9','traumatisme','panique'],
+  'Surprise':['\u00e9tonnement','stup\u00e9faction','perplexit\u00e9','incr\u00e9dulit\u00e9','saisissement','choqu\u00e9','inattendu'],
+  'Tristesse':['souffrance','solitude','manque','abandon','d\u00e9solation','d\u00e9sespoir','nostalgie'],
+  'D\u00e9go\u00fbt':['r\u00e9pugnance','aversion','m\u00e9pris','rejet','r\u00e9pulsion','insupportable','\u00e9c\u0153ur\u00e9'],
+  'Col\u00e8re':['irritation','frustration','indignation','\u00e9nerv\u00e9','marre','injuste','exploser'],
+  'Anticipation':['attente','espoir','impatience','pr\u00e9paration','pr\u00e9voir','vigilance','curiosit\u00e9']
 };
 var _gQS = [
   ['Joie','La personne obtient/poss\u00e8de-t-elle quelque chose de d\u00e9sirable\u00a0?'],
@@ -4562,37 +3788,59 @@ function _llmNormPred(pred) {
     var iL = pred.intensite.toLowerCase();
     if (iL.includes('faible')||iL==='low') pred.intensite='Faible';
     else if (iL.includes('forte')||iL==='high') pred.intensite='Forte';
+    else if (iL.includes('ind\u00e9termin')) pred.intensite='Ind\u00e9termin\u00e9e';
     else pred.intensite='Normale';
+  }
+  if (pred.polarite) {
+    var pL = pred.polarite.toLowerCase();
+    if (pL.includes('positi')) pred.polarite='Positive';
+    else if (pL.includes('n\u00e9gati')) pred.polarite='N\u00e9gative';
+    else if (pL.includes('ind\u00e9termin')) pred.polarite='Ind\u00e9termin\u00e9e';
+    else pred.polarite='Neutre';
   }
   return pred;
 }
 
 function _llmPrompt(tourTexte, contextStr) {
-  return 'Tu es un annotateur expert en linguistique \u00e9motionnelle clinique.\n'+
-    'Ta t\u00e2che\u00a0: analyser le tour de parole d\u2019un patient en entretien psychiatrique et produire une annotation structur\u00e9e selon le mod\u00e8le de Plutchik.\n\n'+
-    '=== CONTEXTE (tours pr\u00e9c\u00e9dents) ===\n'+contextStr+'\n\n'+
-    '=== TOUR PATIENT \u00c0 ANNOTER ===\n'+tourTexte+'\n\n'+
-    '=== INSTRUCTIONS ===\n'+
-    '1. Identifie les marqueurs lexicaux \u00e9motionnels directs\n'+
-    '2. Classe l\u2019\u00e9motion principale parmi les 8 classes de Plutchik\u00a0: Joie \u00b7 Confiance \u00b7 Peur \u00b7 Surprise \u00b7 Tristesse \u00b7 D\u00e9go\u00fbt \u00b7 Col\u00e8re \u00b7 Anticipation\n'+
-    '3. Maximum 2 \u00e9motions par ordre d\u00e9croissant\n'+
-    '4. Type\u00a0: LITTERALE (exprim\u00e9e directement) ou INFEREE (implicite)\n'+
-    '5. Intensit\u00e9 parmi ces valeurs EXACTES\u00a0: Faible \u00b7 Normale \u00b7 Forte\n'+
-    '6. Si aucune \u00e9motion d\u00e9tectable\u00a0: absence_emotion: true\n\n'+
-    '=== CHAMPS LEXICAUX ===\n'+
-    'Joie\u00a0: bonheur, plaisir, satisfaction, enthousiasme, ga\u00eet\u00e9, euphorie, bien-\u00eatre\n'+
-    'Confiance\u00a0: s\u00e9curit\u00e9, s\u00e9r\u00e9nit\u00e9, acceptation, foi, fiabilit\u00e9, stabilit\u00e9, certitude\n'+
-    'Peur\u00a0: anxi\u00e9t\u00e9, appr\u00e9hension, crainte, angoisse, inqui\u00e9tude, effroi, ins\u00e9curit\u00e9\n'+
-    'Surprise\u00a0: \u00e9tonnement, stup\u00e9faction, perplexit\u00e9, incr\u00e9dulit\u00e9, saisissement, d\u00e9sorientation\n'+
-    'Tristesse\u00a0: chagrin, m\u00e9lancolie, d\u00e9sespoir, abattement, deuil, nostalgie, d\u00e9couragement\n'+
-    'D\u00e9go\u00fbt\u00a0: r\u00e9pugnance, aversion, \u00e9c\u0153urement, m\u00e9pris, rejet, r\u00e9pulsion, horreur\n'+
-    'Col\u00e8re\u00a0: irritation, frustration, indignation, rage, exasp\u00e9ration, ressentiment, hostilit\u00e9\n'+
-    'Anticipation\u00a0: attente, espoir, impatience, pr\u00e9paration, pr\u00e9vision, vigilance, curiosit\u00e9\n\n'+
-    '=== FORMAT ===\n'+
-    'R\u00e9ponds UNIQUEMENT en JSON valide. Le champ "emotions" doit contenir UNIQUEMENT des noms d\u2019\u00e9motions.\n'+
-    'NE METS PAS "Absence_emotion" dans le tableau "emotions".\n'+
-    '{\n  "marqueurs": ["mot1","mot2"],\n  "emotions": ["Tristesse"],\n  "intensite": "Normale",\n'+
-    '  "type": "litterale",\n  "absence_emotion": false,\n  "confidence": 0.85,\n  "note": ""\n}';
+  return `Tu es un annotateur expert en linguistique émotionnelle clinique.
+Ta tâche : analyser le tour de parole d'un patient en entretien psychiatrique et produire une annotation structurée selon le modèle de Plutchik.
+=== CONTEXTE (tours précédents) ===
+${contextStr}
+=== TOUR PATIENT À ANNOTER ===
+${tourTexte}
+=== INSTRUCTIONS ===
+1. Utilise le contexte des tours précédents pour interpréter le sens et la charge émotionnelle du tour actuel (ex : ironie, réponse à une question, escalade émotionnelle), mais annote uniquement le tour actuel — pas le contexte.
+2. Choisis Polarité parmi ces valeurs EXACTES : Neutre · Positive · Négative · Indéterminée
+3. Type — EXACTEMENT "explicite", "anaphorique" ou "implicite" (minuscules) :
+   - explicite : mot émotionnel présent ("j'ai peur")
+   - anaphorique : renvoi à un état déjà évoqué, sans le nommer (ex : réponse à une question, escalade émotionnelle, etc.)
+   - implicite : aucun mot ni renvoi, à déduire du contexte
+4. Identifie les marqueurs lexicaux émotionnels explicites quand ils existent.
+5. Si aucune émotion détectable : absence_emotion: true
+6. Classe l'émotion principale parmi les 8 émotions de base de Plutchik : Joie, Confiance, Peur, Surprise, Tristesse, Dégoût, Colère, Anticipation. Maximum 2 émotions, par ordre décroissant d'intensité.
+7. Choisis Intensité parmi ces valeurs EXACTES : Faible · Normale · Forte · Indéterminée
+=== CHAMPS LEXICAUX ===
+Joie : bonheur, plaisir, satisfaction, enthousiasme, gaîté, euphorie, bien-être
+Confiance : sécurité, sérénité, rassuré, foi, stabilité, compter sur, croire en
+Peur : anxiété, appréhension, angoisse, effroi, insécurité, traumatisme, panique
+Surprise : étonnement, stupéfaction, perplexité, incrédulité, saisissement, choqué, inattendu
+Tristesse : souffrance, solitude, manque, abandon, désolation, désespoir, nostalgie
+Dégoût : répugnance, aversion, mépris, rejet, répulsion, insupportable, écœuré
+Colère : irritation, frustration, indignation, énervé, marre, injuste, exploser
+Anticipation : attente, espoir, impatience, préparation, prévoir, vigilance, curiosité
+=== FORMAT ===
+Réponds UNIQUEMENT en JSON valide. Le champ "emotions" doit contenir UNIQUEMENT des noms d'émotions.
+NE METS PAS "Absence_emotion" dans le tableau "emotions".
+{
+  "marqueurs": ["mot1","mot2"],
+  "emotions": ["Tristesse"],
+  "type": "explicite",
+  "polarite": "Normale",
+  "intensite": "Normale",
+  "absence_emotion": false,
+  "confidence": 0.85,
+  "note": ""
+}`;
 }
 
 async function annLLMPredict(ti) {
@@ -4631,10 +3879,10 @@ function annLLMShowResult(ti, pred, container) {
   var EMO_COLORS = {};
   ANN_EMO.forEach(function(e) { EMO_COLORS[e.label] = e.color; });
   var emotions=pred.emotions||[], marqueurs=pred.marqueurs||[], intensite=pred.intensite||'',
-      type=pred.type||'', note=pred.note||'', conf=pred.confidence!=null?Math.round(pred.confidence*100)+'%':'',
+      type=pred.type||'', polarite=pred.polarite||'', note=pred.note||'', conf=pred.confidence!=null?Math.round(pred.confidence*100)+'%':'',
       absent=pred.absence_emotion===true;
   var INTENS_LABEL={Faible:'Faible',Normale:'Normale',Forte:'Forte'};
-  var TYPE_LABEL={litterale:'Litt\u00e9rale',inferee:'Inf\u00e9r\u00e9e'};
+  var TYPE_LABEL={litterale:'Explicite',inferee:'Implicite',explicite:'Explicite',anaphorique:'Anaphorique',implicite:'Implicite'};
 
   var html='<div style="margin-top:8px;padding:12px 14px;border:1.5px solid var(--acc);border-radius:10px;background:var(--w);">';
   html+='<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--acc);margin-bottom:8px;"><svg style="width:13px;height:13px;vertical-align:middle;flex-shrink:0" fill="currentColor" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 463.771 463.771" xml:space="preserve"> <g> <g id="Layer_3_17_"> <g> <g> <g> <g> <path d="M173.073,349.604c-4.825,0-8.961-3.444-9.835-8.188c-10.587-57.508-20.312-92.657-41.352-113.697 S65.695,196.954,8.189,186.367C3.444,185.493,0,181.357,0,176.532s3.445-8.961,8.189-9.835 c57.506-10.586,92.657-20.311,113.697-41.352s30.765-56.191,41.352-113.697c0.874-4.745,5.01-8.189,9.835-8.189 s8.961,3.445,9.835,8.189c10.586,57.506,20.312,92.657,41.352,113.697c21.041,21.04,56.191,30.765,113.697,41.352 c4.746,0.874,8.189,5.01,8.189,9.835s-3.445,8.961-8.189,9.835c-57.506,10.586-92.656,20.312-113.697,41.352 c-21.04,21.04-30.765,56.191-41.352,113.697C182.034,346.16,177.897,349.604,173.073,349.604z M58.669,176.532 c35.099,8.738,59.633,19.319,77.359,37.044s28.307,42.26,37.044,77.359c8.738-35.099,19.319-59.633,37.044-77.359 s42.261-28.307,77.358-37.044c-35.098-8.738-59.632-19.319-77.358-37.044s-28.307-42.26-37.044-77.359 c-8.738,35.099-19.319,59.633-37.044,77.359S93.768,167.794,58.669,176.532z"/> </g> </g> </g> <g> <g> <g> <path d="M350.064,460.312c-4.826,0-8.961-3.444-9.836-8.188c-6.6-35.85-12.584-57.686-25.291-70.393 c-12.709-12.708-34.543-18.692-70.393-25.292c-4.744-0.873-8.188-5.01-8.188-9.834c0-4.826,3.444-8.962,8.188-9.836 c35.85-6.599,57.686-12.584,70.393-25.292s18.691-34.543,25.291-70.392c0.875-4.745,5.012-8.189,9.836-8.189 s8.961,3.445,9.834,8.189c6.602,35.849,12.586,57.686,25.293,70.392c12.707,12.708,34.543,18.693,70.393,25.292 c4.744,0.874,8.188,5.01,8.188,9.836c0,4.824-3.443,8.961-8.188,9.834c-35.85,6.6-57.686,12.584-70.393,25.292 c-12.707,12.707-18.691,34.543-25.293,70.393C359.025,456.868,354.889,460.312,350.064,460.312z M290.773,346.604 c33.689,10.467,48.824,25.602,59.291,59.292c10.465-33.69,25.602-48.825,59.291-59.292 c-33.689-10.466-48.824-25.601-59.291-59.292C339.598,321.003,324.463,336.138,290.773,346.604z"/> </g> </g> </g> </g> </g> </g> </svg> Suggestion LLM'+(conf?' \u00b7 Confiance\u00a0: '+conf:'')+'</div>';
@@ -4646,6 +3894,7 @@ function annLLMShowResult(ti, pred, container) {
     var meta=[];
     if(intensite) meta.push('<span style="font-size:11px;color:var(--t2)">Intensit\u00e9\u00a0: <b>'+(INTENS_LABEL[intensite]||intensite)+'</b></span>');
     if(type) meta.push('<span style="font-size:11px;color:var(--t2)">Type\u00a0: <b>'+(TYPE_LABEL[type]||type)+'</b></span>');
+    if(polarite) meta.push('<span style="font-size:11px;color:var(--t2)">Polarit\u00e9\u00a0: <b>'+polarite+'</b></span>');
     if(meta.length) html+='<div style="display:flex;gap:14px;margin-bottom:8px">'+meta.join('')+'</div>';
     if(marqueurs.length) { html+='<div style="margin-bottom:8px"><span style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px">Marqueurs\u00a0:</span> '+marqueurs.map(function(m){return '<span style="font-size:11px;font-style:italic;background:var(--bg);padding:1px 6px;border-radius:4px;margin:0 2px">\u00ab\u00a0'+m+'\u00a0\u00bb</span>';}).join('')+'</div>'; }
     if(note) html+='<div style="font-size:11px;color:var(--t3);font-style:italic;margin-bottom:8px">'+note+'</div>';
@@ -4656,6 +3905,14 @@ function annLLMShowResult(ti, pred, container) {
   document.getElementById('llm-accept-'+ti)?.addEventListener('click', function() { annLLMAccept(ti,pred); });
 }
 
+function _llmTypeToOption(t) {
+  var v = (t||'').toLowerCase();
+  if (v === 'anaphorique') return 'Anaphorique';
+  if (v === 'implicite' || v === 'inferee') return 'Implicite';
+  if (v === 'explicite' || v === 'litterale') return 'Explicite';
+  return 'Explicite';
+}
+
 function annLLMAccept(ti, pred) {
   var turn = annTurns[ti]; if(!turn) return;
   if(pred.absence_emotion) {
@@ -4664,7 +3921,8 @@ function annLLMAccept(ti, pred) {
     turn.noEmotion=false;
     var emotions=(pred.emotions||[]).map(function(label){var emo=ANN_EMO.find(function(e){return e.label===label;});return emo?emo.id:null;}).filter(Boolean);
     var words=turn.texte.trim().split(/\s+/);
-    var ann={text:turn.texte,wordIndices:words.map(function(_,i){return i;}),emotions:emotions,emotions2:[],emotionLibre:'',annotationType:pred.type==='inferee'?'inferee':'litterale',emotionLitterale:pred.type!=='inferee'?'Oui':null,emotionInferee:pred.type==='inferee'?'Oui':null,polarite:null,intensite:pred.intensite||'Normale',modificateurs:[],experient:'Locuteur',cible:'Ind\u00e9termin\u00e9',source:'Ind\u00e9termin\u00e9',comment:pred.note?'[LLM] '+pred.note:'',groupId:null,ts:Date.now(),_llm:true};
+    var typeOption=_llmTypeToOption(pred.type);
+    var ann={text:turn.texte,wordIndices:words.map(function(_,i){return i;}),emotions:emotions,emotionLibre:'',typeOption:typeOption,annotationType:typeOption==='Implicite'?'inferee':'litterale',polarite:pred.polarite||null,intensite:pred.intensite||'Normale',modificateurs:[],dyades:{primaires:[],secondaires:[],tertiaires:[]},dyadesExclues:[],experient:null,cible:null,source:null,comment:pred.note?'[LLM] '+pred.note:'',groupId:null,ts:Date.now(),_llm:true};
     turn.annotations=[ann];
   }
   var resultDiv=document.getElementById('llm-result-'+ti);
@@ -4704,8 +3962,6 @@ async function annLLMAll() {
   if(btn){btn.disabled=false;btn.style.opacity='1';}
   if(progress){progress.textContent='\u2713 '+total+' tours trait\u00e9s';setTimeout(function(){progress.style.display='none';},3000);}
 }
-
-
 function annReset() {
   const hasAnnotations = annTurns.some(t => t.annotations.length > 0 || t.noEmotion);
   if (hasAnnotations) {
@@ -4724,7 +3980,6 @@ function annDoClear() {
   _llmAllRunning=false;
   annTurns = [];
   annCurrentSelection = { turnIdx: null };
-  annAnnotationMode = null;
   annClosePanel();
   document.getElementById('ann-workspace').style.display = 'none';
   document.getElementById('ann-import-zone').style.display = 'block';
